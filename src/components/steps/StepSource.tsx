@@ -30,17 +30,17 @@ export const StepSource: React.FC<StepSourceProps> = ({ selected, onSelect, onNe
             onClick={() => onSelect(source.id)}
             className={`
               p-4 rounded-xl border-2 transition-all duration-200
-              flex flex-col items-center gap-3
+              flex flex-col items-center gap-3 bg-slate-800/50
               ${selected === source.id 
-                ? 'border-violet-500 bg-violet-500/10' 
-                : 'border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600'
+                ? 'border-violet-500 bg-violet-500/20' 
+                : 'border-slate-600 hover:border-slate-500 hover:bg-slate-700/50'
               }
             `}
           >
-            <div className={`w-12 h-12 ${source.color} rounded-xl flex items-center justify-center`}>
+            <div className={`w-12 h-12 ${source.color} rounded-xl flex items-center justify-center shadow-lg`}>
               <source.icon size={24} className="text-white" />
             </div>
-            <span className="font-medium text-sm">{source.name}</span>
+            <span className="font-medium text-sm text-white">{source.name}</span>
           </button>
         ))}
       </div>
@@ -51,7 +51,7 @@ export const StepSource: React.FC<StepSourceProps> = ({ selected, onSelect, onNe
           disabled={!selected}
           className="px-6 py-2.5 bg-violet-600 text-white rounded-lg font-medium
             disabled:opacity-50 disabled:cursor-not-allowed
-            hover:bg-violet-700 transition-colors flex items-center gap-2"
+            hover:bg-violet-700 transition-colors flex items-center gap-2 shadow-lg"
         >
           Continue
           <ArrowRight size={18} />

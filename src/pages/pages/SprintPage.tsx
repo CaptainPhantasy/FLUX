@@ -15,9 +15,13 @@ import {
     Calendar
 } from 'lucide-react';
 import { Button } from '@/components/ui';
-import SprintManagement from '@/components/SprintManagement';
-import SprintBoard from '@/components/SprintBoard';
-import BacklogGrooming from '@/components/BacklogGrooming';
+// Using inline placeholder until components are properly wired
+// import SprintManagement from '@/components/SprintManagement';
+// import SprintBoard from '@/components/SprintBoard';
+// import BacklogGrooming from '@/components/BacklogGrooming';
+
+import { Card } from '@/components/ui';
+import { CheckCircle2, Clock, AlertCircle, Users } from 'lucide-react';
 
 export default function SprintPage() {
     const [activeTab, setActiveTab] = useState('board');
@@ -93,21 +97,110 @@ export default function SprintPage() {
                         className="h-full"
                     >
                         {activeTab === 'board' && (
-                            <div className="h-full">
-                                <SprintBoard />
+                            <div className="h-full space-y-6">
+                                {/* Sprint Stats */}
+                                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                                    <Card variant="elevated" padding="md" className="flex items-center gap-4">
+                                        <div className="w-10 h-10 rounded-lg bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center text-emerald-600">
+                                            <CheckCircle2 size={20} />
+                                        </div>
+                                        <div>
+                                            <p className="text-sm text-muted-foreground">Completed</p>
+                                            <p className="text-xl font-bold">12</p>
+                                        </div>
+                                    </Card>
+                                    <Card variant="elevated" padding="md" className="flex items-center gap-4">
+                                        <div className="w-10 h-10 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-600">
+                                            <Clock size={20} />
+                                        </div>
+                                        <div>
+                                            <p className="text-sm text-muted-foreground">In Progress</p>
+                                            <p className="text-xl font-bold">5</p>
+                                        </div>
+                                    </Card>
+                                    <Card variant="elevated" padding="md" className="flex items-center gap-4">
+                                        <div className="w-10 h-10 rounded-lg bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center text-amber-600">
+                                            <AlertCircle size={20} />
+                                        </div>
+                                        <div>
+                                            <p className="text-sm text-muted-foreground">Blocked</p>
+                                            <p className="text-xl font-bold">2</p>
+                                        </div>
+                                    </Card>
+                                    <Card variant="elevated" padding="md" className="flex items-center gap-4">
+                                        <div className="w-10 h-10 rounded-lg bg-violet-100 dark:bg-violet-900/30 flex items-center justify-center text-violet-600">
+                                            <Users size={20} />
+                                        </div>
+                                        <div>
+                                            <p className="text-sm text-muted-foreground">Team Members</p>
+                                            <p className="text-xl font-bold">8</p>
+                                        </div>
+                                    </Card>
+                                </div>
+                                {/* Kanban Board Placeholder */}
+                                <Card variant="elevated" padding="lg" className="min-h-[400px]">
+                                    <h3 className="text-lg font-semibold mb-4">Sprint Board</h3>
+                                    <div className="grid grid-cols-4 gap-4">
+                                        {['To Do', 'In Progress', 'Review', 'Done'].map((col) => (
+                                            <div key={col} className="bg-muted/50 rounded-xl p-4 min-h-[300px]">
+                                                <h4 className="font-medium text-sm text-muted-foreground mb-3">{col}</h4>
+                                                <div className="space-y-2">
+                                                    {col === 'In Progress' && (
+                                                        <Card variant="hover" padding="sm" className="cursor-pointer">
+                                                            <p className="text-sm font-medium">Implement auth flow</p>
+                                                            <p className="text-xs text-muted-foreground mt-1">3 story points</p>
+                                                        </Card>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </Card>
                             </div>
                         )}
 
                         {activeTab === 'backlog' && (
-                            <div className="h-full">
-                                <BacklogGrooming />
-                            </div>
+                            <Card variant="elevated" padding="lg" className="min-h-[500px]">
+                                <h3 className="text-lg font-semibold mb-4">Backlog Items</h3>
+                                <p className="text-muted-foreground">Drag items to prioritize your backlog.</p>
+                                <div className="mt-6 space-y-3">
+                                    {['User authentication', 'Dashboard redesign', 'API integration', 'Performance optimization'].map((item, i) => (
+                                        <Card key={i} variant="hover" padding="md" className="cursor-pointer flex justify-between items-center">
+                                            <span className="font-medium">{item}</span>
+                                            <span className="text-sm text-muted-foreground">{(i + 1) * 2} pts</span>
+                                        </Card>
+                                    ))}
+                                </div>
+                            </Card>
                         )}
 
                         {activeTab === 'management' && (
-                             <div className="h-full overflow-y-auto">
-                                <SprintManagement />
-                            </div>
+                            <Card variant="elevated" padding="lg" className="min-h-[500px]">
+                                <h3 className="text-lg font-semibold mb-4">Sprint Planning</h3>
+                                <p className="text-muted-foreground">Configure sprint duration, capacity, and goals.</p>
+                                <div className="mt-6 grid grid-cols-2 gap-6">
+                                    <div className="space-y-4">
+                                        <label className="block">
+                                            <span className="text-sm font-medium">Sprint Name</span>
+                                            <input type="text" defaultValue="Sprint 42" className="mt-1 w-full px-3 py-2 border border-border rounded-lg bg-background" />
+                                        </label>
+                                        <label className="block">
+                                            <span className="text-sm font-medium">Duration (days)</span>
+                                            <input type="number" defaultValue="14" className="mt-1 w-full px-3 py-2 border border-border rounded-lg bg-background" />
+                                        </label>
+                                    </div>
+                                    <div className="space-y-4">
+                                        <label className="block">
+                                            <span className="text-sm font-medium">Team Capacity (points)</span>
+                                            <input type="number" defaultValue="40" className="mt-1 w-full px-3 py-2 border border-border rounded-lg bg-background" />
+                                        </label>
+                                        <label className="block">
+                                            <span className="text-sm font-medium">Sprint Goal</span>
+                                            <textarea className="mt-1 w-full px-3 py-2 border border-border rounded-lg bg-background" rows={3} defaultValue="Complete user authentication and dashboard MVP" />
+                                        </label>
+                                    </div>
+                                </div>
+                            </Card>
                         )}
                     </motion.div>
                 </AnimatePresence>

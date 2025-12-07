@@ -13,8 +13,8 @@ export interface CardProps extends HTMLAttributes<HTMLDivElement> {
 }
 
 const cardVariants = {
-    // Default - subtle elevation
-    default: 'bg-card text-card-foreground border border-border/50 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.1)] dark:shadow-[0_4px_20px_-4px_rgba(0,0,0,0.3)]',
+    // Default - moderate floating shadow
+    default: 'bg-card text-card-foreground border border-border/50 shadow-[0_8px_25px_-5px_rgba(0,0,0,0.12),0_4px_10px_-3px_rgba(0,0,0,0.08)] dark:shadow-[0_8px_25px_-5px_rgba(0,0,0,0.4),0_4px_10px_-3px_rgba(0,0,0,0.25)]',
     
     // Flat - no elevation
     flat: 'bg-muted/50 text-card-foreground border-0',
@@ -25,28 +25,32 @@ const cardVariants = {
     // Ghost - minimal
     ghost: 'bg-transparent text-card-foreground border-0',
     
-    // Hover - interactive with lift effect
+    // Hover - lifts on hover, drops with MORE shadow on press
     hover: `bg-card text-card-foreground border border-border/50 
-            shadow-[0_4px_20px_-4px_rgba(0,0,0,0.1)] dark:shadow-[0_4px_20px_-4px_rgba(0,0,0,0.3)]
-            hover:shadow-[0_12px_40px_-8px_rgba(0,0,0,0.15)] dark:hover:shadow-[0_12px_40px_-8px_rgba(0,0,0,0.5)]
-            hover:border-violet-200/50 dark:hover:border-violet-700/50
+            shadow-[0_8px_25px_-5px_rgba(0,0,0,0.12),0_4px_10px_-3px_rgba(0,0,0,0.08)] 
+            dark:shadow-[0_8px_25px_-5px_rgba(0,0,0,0.4),0_4px_10px_-3px_rgba(0,0,0,0.25)]
+            hover:shadow-[0_6px_20px_-4px_rgba(0,0,0,0.1),0_3px_8px_-2px_rgba(0,0,0,0.05)] 
+            dark:hover:shadow-[0_6px_20px_-4px_rgba(0,0,0,0.35),0_3px_8px_-2px_rgba(0,0,0,0.2)]
+            hover:border-violet-200/50 dark:hover:border-violet-600/50
             hover:-translate-y-1
-            active:shadow-[0_2px_10px_-2px_rgba(0,0,0,0.2)] dark:active:shadow-[0_2px_10px_-2px_rgba(0,0,0,0.4)]
-            active:translate-y-0
+            active:shadow-[0_12px_35px_-3px_rgba(0,0,0,0.2),0_6px_15px_-2px_rgba(0,0,0,0.15)] 
+            dark:active:shadow-[0_12px_35px_-3px_rgba(0,0,0,0.55),0_6px_15px_-2px_rgba(0,0,0,0.35)]
+            active:translate-y-0.5
             transition-all duration-200 ease-out`,
     
     // Gradient - accent card
-    gradient: 'bg-gradient-to-br from-violet-500 to-fuchsia-500 text-white border-0 shadow-[0_8px_30px_-6px_rgba(139,92,246,0.4)]',
+    gradient: 'bg-gradient-to-br from-violet-500 to-fuchsia-500 text-white border-0 shadow-[0_10px_35px_-8px_rgba(139,92,246,0.5)]',
     
-    // Elevated - maximum depth (for hero cards)
+    // Elevated - premium depth with thick shadows
     elevated: `bg-card text-card-foreground border border-border/30
-               shadow-[0_8px_30px_-6px_rgba(0,0,0,0.15),0_4px_10px_-4px_rgba(0,0,0,0.1)] 
-               dark:shadow-[0_8px_30px_-6px_rgba(0,0,0,0.4),0_4px_10px_-4px_rgba(0,0,0,0.3)]
-               hover:shadow-[0_20px_50px_-12px_rgba(0,0,0,0.2),0_8px_20px_-8px_rgba(0,0,0,0.15)]
-               dark:hover:shadow-[0_20px_50px_-12px_rgba(0,0,0,0.5),0_8px_20px_-8px_rgba(0,0,0,0.4)]
+               shadow-[0_10px_35px_-8px_rgba(0,0,0,0.18),0_5px_15px_-5px_rgba(0,0,0,0.12)] 
+               dark:shadow-[0_10px_35px_-8px_rgba(0,0,0,0.5),0_5px_15px_-5px_rgba(0,0,0,0.35)]
+               hover:shadow-[0_8px_25px_-5px_rgba(0,0,0,0.12),0_4px_10px_-3px_rgba(0,0,0,0.08)]
+               dark:hover:shadow-[0_8px_25px_-5px_rgba(0,0,0,0.4),0_4px_10px_-3px_rgba(0,0,0,0.25)]
                hover:-translate-y-1
-               active:shadow-[0_4px_15px_-4px_rgba(0,0,0,0.15)] dark:active:shadow-[0_4px_15px_-4px_rgba(0,0,0,0.35)]
-               active:translate-y-0
+               active:shadow-[0_14px_45px_-5px_rgba(0,0,0,0.22),0_8px_20px_-4px_rgba(0,0,0,0.18)] 
+               dark:active:shadow-[0_14px_45px_-5px_rgba(0,0,0,0.6),0_8px_20px_-4px_rgba(0,0,0,0.4)]
+               active:translate-y-0.5
                transition-all duration-200 ease-out`,
 };
 
