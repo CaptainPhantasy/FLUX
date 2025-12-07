@@ -2,29 +2,65 @@
 // =====================================
 // FLUX - Agile Sprint Planning
 // Style: Glassmorphism & Glowing Accents
-// Last Updated: 21:18:00 Dec 06, 2025
+// Last Updated: Dec 07, 2025
 // =====================================
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     Timer,
     Layers,
     KanbanSquare,
     Rocket,
-    Calendar
+    Calendar,
+    Plus,
+    Play,
+    Pause
 } from 'lucide-react';
-import { Button } from '@/components/ui';
-// Using inline placeholder until components are properly wired
-// import SprintManagement from '@/components/SprintManagement';
-// import SprintBoard from '@/components/SprintBoard';
-// import BacklogGrooming from '@/components/BacklogGrooming';
-
-import { Card } from '@/components/ui';
+import { Button, Card, Badge } from '@/components/ui';
 import { CheckCircle2, Clock, AlertCircle, Users } from 'lucide-react';
+import { useFluxStore } from '@/lib/store';
+import { CreateTaskModal } from '@/features/tasks';
+
+// Local storage for sprint config
+const SPRINT_KEY = 'flux_sprint_config';
+const getSprintConfig = () => {
+    try {
+        const stored = localStorage.getItem(SPRINT_KEY);
+        return stored ? JSON.parse(stored) : { name: 'Sprint 42', duration: 14, capacity: 40, goal: 'Complete user authentication and dashboard MVP', daysRemaining: 5 };
+    } catch {
+        return { name: 'Sprint 42', duration: 14, capacity: 40, goal: '', daysRemaining: 5 };
+    }
+};
 
 export default function SprintPage() {
+    const { tasks, updateTask } = useFluxStore();
     const [activeTab, setActiveTab] = useState('board');
+    const [isCreateTaskOpen, setIsCreateTaskOpen] = useState(false);
+    const [sprintConfig, setSprintConfig] = useState(getSprintConfig);
+
+    // Calculate real stats from tasks
+    const stats = useMemo(() => ({
+        completed: tasks.filter(t => t.status === 'done').length,
+        inProgress: tasks.filter(t => t.status === 'in-progress').length,
+        blocked: tasks.filter(t => t.priority === 'urgent').length,
+        todo: tasks.filter(t => t.status === 'todo').length,
+        codeReview: tasks.filter(t => t.status === 'code-review').length,
+        testing: tasks.filter(t => t.status === 'testing').length,
+    }), [tasks]);
+
+    // Group tasks by status for sprint board
+    const tasksByStatus = useMemo(() => ({
+        'todo': tasks.filter(t => t.status === 'todo'),
+        'in-progress': tasks.filter(t => t.status === 'in-progress'),
+        'code-review': tasks.filter(t => t.status === 'code-review'),
+        'testing': tasks.filter(t => t.status === 'testing'),
+        'done': tasks.filter(t => t.status === 'done'),
+    }), [tasks]);
+
+    const handleSaveSprintConfig = () => {
+        localStorage.setItem(SPRINT_KEY, JSON.stringify(sprintConfig));
+    };
 
     const tabs = [
         { id: 'board', label: 'Active Sprint Board', icon: KanbanSquare },
@@ -51,7 +87,7 @@ export default function SprintPage() {
                 <div className="flex items-center gap-3">
                    <div className="flex items-center gap-2 px-3 py-1.5 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-300 rounded-full text-sm font-semibold border border-emerald-100 dark:border-emerald-800">
                         <Timer size={14} />
-                        <span>Sprint 42: 5 Days Remaining</span>
+                        <span>{sprintConfig.name}: {sprintConfig.daysRemaining} Days Remaining</span>
                    </div>
                 </div>
             </div>
@@ -98,7 +134,7 @@ export default function SprintPage() {
                     >
                         {activeTab === 'board' && (
                             <div className="h-full space-y-6">
-                                {/* Sprint Stats */}
+                                {/* Sprint Stats - Using real task data */}
                                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                                     <Card variant="elevated" padding="md" className="flex items-center gap-4">
                                         <div className="w-10 h-10 rounded-lg bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center text-emerald-600">
@@ -106,7 +142,7 @@ export default function SprintPage() {
                                         </div>
                                         <div>
                                             <p className="text-sm text-muted-foreground">Completed</p>
-                                            <p className="text-xl font-bold">12</p>
+                                            <p className="text-xl font-bold">{stats.completed}</p>
                                         </div>
                                     </Card>
                                     <Card variant="elevated" padding="md" className="flex items-center gap-4">
@@ -115,7 +151,7 @@ export default function SprintPage() {
                                         </div>
                                         <div>
                                             <p className="text-sm text-muted-foreground">In Progress</p>
-                                            <p className="text-xl font-bold">5</p>
+                                            <p className="text-xl font-bold">{stats.inProgress}</p>
                                         </div>
                                     </Card>
                                     <Card variant="elevated" padding="md" className="flex items-center gap-4">
@@ -123,33 +159,69 @@ export default function SprintPage() {
                                             <AlertCircle size={20} />
                                         </div>
                                         <div>
-                                            <p className="text-sm text-muted-foreground">Blocked</p>
-                                            <p className="text-xl font-bold">2</p>
+                                            <p className="text-sm text-muted-foreground">Urgent</p>
+                                            <p className="text-xl font-bold">{stats.blocked}</p>
                                         </div>
                                     </Card>
                                     <Card variant="elevated" padding="md" className="flex items-center gap-4">
                                         <div className="w-10 h-10 rounded-lg bg-violet-100 dark:bg-violet-900/30 flex items-center justify-center text-violet-600">
-                                            <Users size={20} />
+                                            <Layers size={20} />
                                         </div>
                                         <div>
-                                            <p className="text-sm text-muted-foreground">Team Members</p>
-                                            <p className="text-xl font-bold">8</p>
+                                            <p className="text-sm text-muted-foreground">Total Tasks</p>
+                                            <p className="text-xl font-bold">{tasks.length}</p>
                                         </div>
                                     </Card>
                                 </div>
-                                {/* Kanban Board Placeholder */}
-                                <Card variant="elevated" padding="lg" className="min-h-[400px]">
-                                    <h3 className="text-lg font-semibold mb-4">Sprint Board</h3>
-                                    <div className="grid grid-cols-4 gap-4">
-                                        {['To Do', 'In Progress', 'Review', 'Done'].map((col) => (
-                                            <div key={col} className="bg-muted/50 rounded-xl p-4 min-h-[300px]">
-                                                <h4 className="font-medium text-sm text-muted-foreground mb-3">{col}</h4>
+                                {/* Agile Sprint Kanban Board - Using real tasks */}
+                                <Card variant="elevated" padding="lg" className="min-h-[400px] overflow-x-auto">
+                                    <div className="flex justify-between items-center mb-4">
+                                        <h3 className="text-lg font-semibold">Sprint Board</h3>
+                                        <Button variant="primary" size="sm" onClick={() => setIsCreateTaskOpen(true)}>
+                                            <Plus size={14} className="mr-1" />
+                                            Add Task
+                                        </Button>
+                                    </div>
+                                    <div className="flex gap-4 min-w-max pb-4">
+                                        {[
+                                            { id: 'todo', label: 'To Do', color: 'bg-violet-50 dark:bg-violet-900/20' },
+                                            { id: 'in-progress', label: 'In Progress', color: 'bg-blue-50 dark:bg-blue-900/20' },
+                                            { id: 'code-review', label: 'Code Review', color: 'bg-amber-50 dark:bg-amber-900/20' },
+                                            { id: 'testing', label: 'Testing', color: 'bg-orange-50 dark:bg-orange-900/20' },
+                                            { id: 'done', label: 'Done', color: 'bg-emerald-50 dark:bg-emerald-900/20' },
+                                        ].map((col) => (
+                                            <div key={col.id} className={`w-[240px] shrink-0 rounded-xl p-4 min-h-[300px] ${col.color}`}>
+                                                <div className="flex justify-between items-center mb-3">
+                                                    <h4 className="font-semibold text-xs uppercase tracking-wider text-muted-foreground">{col.label}</h4>
+                                                    <Badge variant="secondary" className="text-xs">{tasksByStatus[col.id]?.length || 0}</Badge>
+                                                </div>
                                                 <div className="space-y-2">
-                                                    {col === 'In Progress' && (
-                                                        <Card variant="hover" padding="sm" className="cursor-pointer">
-                                                            <p className="text-sm font-medium">Implement auth flow</p>
-                                                            <p className="text-xs text-muted-foreground mt-1">3 story points</p>
+                                                    {tasksByStatus[col.id]?.map((task) => (
+                                                        <Card 
+                                                            key={task.id} 
+                                                            variant="hover" 
+                                                            padding="sm" 
+                                                            className="cursor-pointer"
+                                                            onClick={() => {
+                                                                // Quick status change on click
+                                                                const nextStatus = {
+                                                                    'todo': 'in-progress',
+                                                                    'in-progress': 'code-review',
+                                                                    'code-review': 'testing',
+                                                                    'testing': 'done',
+                                                                    'done': 'done'
+                                                                };
+                                                                if (task.status !== 'done') {
+                                                                    updateTask(task.id, { status: nextStatus[task.status] });
+                                                                }
+                                                            }}
+                                                        >
+                                                            <p className="text-sm font-medium">{task.title}</p>
+                                                            <p className="text-xs text-muted-foreground mt-1 capitalize">{task.priority} priority</p>
                                                         </Card>
+                                                    ))}
+                                                    {tasksByStatus[col.id]?.length === 0 && (
+                                                        <p className="text-xs text-muted-foreground text-center py-4">No tasks</p>
                                                     )}
                                                 </div>
                                             </div>
@@ -161,43 +233,141 @@ export default function SprintPage() {
 
                         {activeTab === 'backlog' && (
                             <Card variant="elevated" padding="lg" className="min-h-[500px]">
-                                <h3 className="text-lg font-semibold mb-4">Backlog Items</h3>
-                                <p className="text-muted-foreground">Drag items to prioritize your backlog.</p>
+                                <div className="flex justify-between items-center mb-4">
+                                    <div>
+                                        <h3 className="text-lg font-semibold">Backlog Items</h3>
+                                        <p className="text-muted-foreground text-sm">Click to move tasks to In Progress.</p>
+                                    </div>
+                                    <Button variant="primary" size="sm" onClick={() => setIsCreateTaskOpen(true)}>
+                                        <Plus size={14} className="mr-1" />
+                                        Add to Backlog
+                                    </Button>
+                                </div>
                                 <div className="mt-6 space-y-3">
-                                    {['User authentication', 'Dashboard redesign', 'API integration', 'Performance optimization'].map((item, i) => (
-                                        <Card key={i} variant="hover" padding="md" className="cursor-pointer flex justify-between items-center">
-                                            <span className="font-medium">{item}</span>
-                                            <span className="text-sm text-muted-foreground">{(i + 1) * 2} pts</span>
+                                    {tasks.filter(t => t.status === 'backlog' || t.status === 'todo').map((task) => (
+                                        <Card 
+                                            key={task.id} 
+                                            variant="hover" 
+                                            padding="md" 
+                                            className="cursor-pointer flex justify-between items-center group"
+                                            onClick={() => updateTask(task.id, { status: 'in-progress' })}
+                                        >
+                                            <div>
+                                                <span className="font-medium">{task.title}</span>
+                                                {task.description && (
+                                                    <p className="text-xs text-muted-foreground mt-1 line-clamp-1">{task.description}</p>
+                                                )}
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                                <Badge variant={task.priority === 'high' ? 'destructive' : 'secondary'} className="capitalize">
+                                                    {task.priority}
+                                                </Badge>
+                                                <Button 
+                                                    variant="ghost" 
+                                                    size="sm" 
+                                                    className="opacity-0 group-hover:opacity-100"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        updateTask(task.id, { status: 'in-progress' });
+                                                    }}
+                                                >
+                                                    <Play size={14} className="mr-1" />
+                                                    Start
+                                                </Button>
+                                            </div>
                                         </Card>
                                     ))}
+                                    {tasks.filter(t => t.status === 'backlog' || t.status === 'todo').length === 0 && (
+                                        <div className="text-center py-12 text-muted-foreground">
+                                            <Layers size={32} className="mx-auto mb-2 opacity-50" />
+                                            <p>No items in backlog</p>
+                                        </div>
+                                    )}
                                 </div>
                             </Card>
                         )}
 
                         {activeTab === 'management' && (
                             <Card variant="elevated" padding="lg" className="min-h-[500px]">
-                                <h3 className="text-lg font-semibold mb-4">Sprint Planning</h3>
-                                <p className="text-muted-foreground">Configure sprint duration, capacity, and goals.</p>
+                                <div className="flex justify-between items-center mb-4">
+                                    <div>
+                                        <h3 className="text-lg font-semibold">Sprint Planning</h3>
+                                        <p className="text-muted-foreground text-sm">Configure sprint duration, capacity, and goals.</p>
+                                    </div>
+                                    <Button variant="primary" onClick={handleSaveSprintConfig}>
+                                        Save Configuration
+                                    </Button>
+                                </div>
                                 <div className="mt-6 grid grid-cols-2 gap-6">
                                     <div className="space-y-4">
                                         <label className="block">
                                             <span className="text-sm font-medium">Sprint Name</span>
-                                            <input type="text" defaultValue="Sprint 42" className="mt-1 w-full px-3 py-2 border border-border rounded-lg bg-background" />
+                                            <input 
+                                                type="text" 
+                                                value={sprintConfig.name}
+                                                onChange={(e) => setSprintConfig({...sprintConfig, name: e.target.value})}
+                                                className="mt-1 w-full px-3 py-2 border border-border rounded-lg bg-background text-foreground" 
+                                            />
                                         </label>
                                         <label className="block">
                                             <span className="text-sm font-medium">Duration (days)</span>
-                                            <input type="number" defaultValue="14" className="mt-1 w-full px-3 py-2 border border-border rounded-lg bg-background" />
+                                            <input 
+                                                type="number" 
+                                                value={sprintConfig.duration}
+                                                onChange={(e) => setSprintConfig({...sprintConfig, duration: parseInt(e.target.value) || 14})}
+                                                className="mt-1 w-full px-3 py-2 border border-border rounded-lg bg-background text-foreground" 
+                                            />
+                                        </label>
+                                        <label className="block">
+                                            <span className="text-sm font-medium">Days Remaining</span>
+                                            <input 
+                                                type="number" 
+                                                value={sprintConfig.daysRemaining}
+                                                onChange={(e) => setSprintConfig({...sprintConfig, daysRemaining: parseInt(e.target.value) || 0})}
+                                                className="mt-1 w-full px-3 py-2 border border-border rounded-lg bg-background text-foreground" 
+                                            />
                                         </label>
                                     </div>
                                     <div className="space-y-4">
                                         <label className="block">
                                             <span className="text-sm font-medium">Team Capacity (points)</span>
-                                            <input type="number" defaultValue="40" className="mt-1 w-full px-3 py-2 border border-border rounded-lg bg-background" />
+                                            <input 
+                                                type="number" 
+                                                value={sprintConfig.capacity}
+                                                onChange={(e) => setSprintConfig({...sprintConfig, capacity: parseInt(e.target.value) || 40})}
+                                                className="mt-1 w-full px-3 py-2 border border-border rounded-lg bg-background text-foreground" 
+                                            />
                                         </label>
                                         <label className="block">
                                             <span className="text-sm font-medium">Sprint Goal</span>
-                                            <textarea className="mt-1 w-full px-3 py-2 border border-border rounded-lg bg-background" rows={3} defaultValue="Complete user authentication and dashboard MVP" />
+                                            <textarea 
+                                                value={sprintConfig.goal}
+                                                onChange={(e) => setSprintConfig({...sprintConfig, goal: e.target.value})}
+                                                className="mt-1 w-full px-3 py-2 border border-border rounded-lg bg-background text-foreground" 
+                                                rows={3} 
+                                            />
                                         </label>
+                                    </div>
+                                </div>
+                                <div className="mt-6 p-4 bg-muted/50 rounded-xl">
+                                    <h4 className="font-medium mb-2">Sprint Summary</h4>
+                                    <div className="grid grid-cols-4 gap-4 text-sm">
+                                        <div>
+                                            <p className="text-muted-foreground">Total Tasks</p>
+                                            <p className="font-bold text-lg">{tasks.length}</p>
+                                        </div>
+                                        <div>
+                                            <p className="text-muted-foreground">Completed</p>
+                                            <p className="font-bold text-lg text-emerald-600">{stats.completed}</p>
+                                        </div>
+                                        <div>
+                                            <p className="text-muted-foreground">In Progress</p>
+                                            <p className="font-bold text-lg text-blue-600">{stats.inProgress}</p>
+                                        </div>
+                                        <div>
+                                            <p className="text-muted-foreground">Completion</p>
+                                            <p className="font-bold text-lg">{tasks.length > 0 ? Math.round((stats.completed / tasks.length) * 100) : 0}%</p>
+                                        </div>
                                     </div>
                                 </div>
                             </Card>
@@ -208,8 +378,10 @@ export default function SprintPage() {
             
              <div className="text-xs text-slate-400 mt-4 border-t border-border pt-4 flex justify-between shrink-0">
                  <span>Flux Agile Module v1.5</span>
-                 <span>21:18:00 Dec 06, 2025</span>
+                 <span>Dec 07, 2025</span>
             </div>
+            
+            <CreateTaskModal isOpen={isCreateTaskOpen} onClose={() => setIsCreateTaskOpen(false)} />
         </div>
     );
 }

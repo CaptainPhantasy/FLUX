@@ -1,6 +1,6 @@
 // =====================================
 // FLUX - Sidebar Navigation
-// Last Updated: 21:11:22 Dec 06, 2025
+// Last Updated: 14:45:00 Dec 07, 2025
 // =====================================
 // @ts-nocheck
 import { useState, useEffect } from 'react';
@@ -26,10 +26,13 @@ import {
     Palette,
     BarChart3,
     Plug,
-    FileBox
+    FileBox,
+    Headphones,
+    Server
 } from 'lucide-react';
 import { SettingsModal } from '@/features/settings/SettingsModal';
 import { CreateTaskModal } from '@/features/tasks/CreateTaskModal';
+import { WorkflowSelector } from '@/components/WorkflowSelector';
 
 const FluxSidebar: React.FC = () => {
     const { sidebarCollapsed, toggleSidebar, user, projects, currentProjectId, setCurrentProject, fetchProjects } = useFluxStore();
@@ -159,6 +162,13 @@ const FluxSidebar: React.FC = () => {
                         </motion.div>
                     )}
                 </div>
+
+                {/* Workflow Mode Selector */}
+                {!isCollapsed ? (
+                    <WorkflowSelector variant="compact" className="self-end" />
+                ) : (
+                    <WorkflowSelector variant="compact" />
+                )}
             </div>
 
             {/* Navigation Links */}

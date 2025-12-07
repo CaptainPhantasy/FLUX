@@ -157,7 +157,11 @@ export const ImportWizard: React.FC<ImportWizardProps> = ({ onClose }) => {
               {step === WizardStep.IMPORT && (
                 <StepProgress 
                   source={data.source!} 
-                  onComplete={() => console.log('Done')}
+                  onComplete={() => {
+                    console.log('[ImportWizard] Import complete with data:', data);
+                    // Could call store action here to import tasks
+                    onClose();
+                  }}
                   onClose={onClose}
                 />
               )}

@@ -23,8 +23,33 @@ export interface TerminalProps {
   isThinking?: boolean;
 }
 
-// Tasks
-export type TaskStatus = 'todo' | 'in-progress' | 'review' | 'done' | 'archived';
+// Tasks - Dynamic Workflow Statuses
+// Supports Agile, CCaaS (Contact Center), and ITSM workflows
+export type TaskStatus = 
+  // Agile Workflow
+  | 'backlog'         // Product backlog - not yet refined
+  | 'ready'           // Refined, ready for sprint
+  | 'todo'            // In sprint, not started
+  | 'in-progress'     // Actively being worked on
+  | 'code-review'     // Code submitted for peer review
+  | 'testing'         // In QA/testing phase
+  | 'done'            // Completed and accepted
+  | 'archived'        // Archived/closed
+  // CCaaS (Contact Center) Workflow
+  | 'new'             // New ticket
+  | 'queued'          // In queue
+  | 'assigned'        // Assigned to agent
+  | 'pending-customer'// Waiting for customer response
+  | 'escalated'       // Escalated to supervisor
+  | 'resolved'        // Issue resolved
+  | 'closed'          // Ticket closed
+  // ITSM Workflow
+  | 'triaged'         // Triaged by support
+  | 'investigating'   // Under investigation
+  | 'pending-vendor'  // Waiting on vendor
+  | 'pending-approval'// Awaiting approval
+  | 'implementing';   // Implementation in progress
+
 export type TaskPriority = 'low' | 'medium' | 'high' | 'urgent';
 
 export interface Task {
@@ -273,7 +298,14 @@ export interface ImportState {
 }
 
 export const MOCK_SOURCE_STATUSES = ['To Do', 'In Progress', 'Done', 'Blocked'];
-export const FLUX_STATUSES = ['todo', 'in-progress', 'review', 'done'];
+
+// Dynamic status lists for each workflow mode
+export const AGILE_STATUSES = ['backlog', 'ready', 'todo', 'in-progress', 'code-review', 'testing', 'done'];
+export const CCAAS_STATUSES = ['new', 'queued', 'assigned', 'in-progress', 'pending-customer', 'escalated', 'resolved', 'closed'];
+export const ITSM_STATUSES = ['new', 'triaged', 'assigned', 'investigating', 'pending-vendor', 'pending-approval', 'implementing', 'resolved', 'closed'];
+
+// Default export for backwards compatibility
+export const FLUX_STATUSES = AGILE_STATUSES;
 
 // Assets
 export type FileType = 'pdf' | 'image' | 'code' | 'video' | 'sheet' | 'folder' | 'unknown';

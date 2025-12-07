@@ -24,13 +24,20 @@ import { useFluxStore } from '@/lib/store';
 import { formatDate } from '@/lib/utils';
 import { useNavigate } from 'react-router-dom';
 import { Card, Button, Badge } from '@/components/ui';
-import { CreateTaskModal } from '@/features/tasks/CreateTaskModal';
+import { CreateTaskModal, EditTaskModal } from '@/features/tasks';
 import { useState } from 'react';
+import type { Task } from '@/types';
 
 export default function DashboardPage() {
     const navigate = useNavigate();
     const { user, tasks, notifications, openTerminal, clearAllNotifications } = useFluxStore();
     const [isCreateTaskOpen, setIsCreateTaskOpen] = useState(false);
+    const [editingTask, setEditingTask] = useState<Task | null>(null);
+    const [filterStatus, setFilterStatus] = useState<string | null>(null);
+
+    const filteredTasks = filterStatus 
+        ? tasks.filter(t => t.status === filterStatus)
+        : tasks;
 
     const stats = [
         { label: 'Total Tasks', value: tasks.length, icon: CheckSquare, color: 'text-blue-600', bg: 'bg-blue-50' },
@@ -39,7 +46,7 @@ export default function DashboardPage() {
         { label: 'Urgent', value: tasks.filter(t => t.priority === 'high').length, icon: AlertCircle, color: 'text-rose-600', bg: 'bg-rose-50' },
     ];
 
-    const recentTasks = tasks.slice(0, 4);
+    const recentTasks = filteredTasks.slice(0, 4);
 
     return (
         <div className="p-8 max-w-7xl mx-auto space-y-8">
@@ -55,10 +62,20 @@ export default function DashboardPage() {
                     </p>
                 </div>
                 <div className="flex items-center gap-3">
-                    <Button variant="secondary" size="default" onClick={() => openTerminal()}>
-                        <Filter size={16} />
-                        <span className="ml-2 hidden sm:inline">Filter</span>
-                    </Button>
+                    <div className="relative">
+                        <select
+                            value={filterStatus || ''}
+                            onChange={(e) => setFilterStatus(e.target.value || null)}
+                            className="appearance-none bg-card border border-border rounded-xl px-4 py-2 pr-8 text-sm font-medium text-foreground focus:outline-none focus:ring-2 focus:ring-violet-500"
+                        >
+                            <option value="">All Tasks</option>
+                            <option value="todo">To Do</option>
+                            <option value="in-progress">In Progress</option>
+                            <option value="done">Done</option>
+                            <option value="backlog">Backlog</option>
+                        </select>
+                        <Filter size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+                    </div>
                     <Button variant="primary" size="default" onClick={() => setIsCreateTaskOpen(true)}>
                         <Plus size={16} />
                         <span className="ml-2">New Task</span>
@@ -67,6 +84,7 @@ export default function DashboardPage() {
             </div>
 
             <CreateTaskModal isOpen={isCreateTaskOpen} onClose={() => setIsCreateTaskOpen(false)} />
+            <EditTaskModal isOpen={!!editingTask} onClose={() => setEditingTask(null)} task={editingTask} />
 
             {/* Stats Grid - Elevated Cards with Thick Shadows */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
@@ -144,7 +162,7 @@ export default function DashboardPage() {
                                                 className="opacity-0 group-hover:opacity-100 transition-opacity"
                                                 onClick={(e) => {
                                                     e.stopPropagation();
-                                                    alert(`Edit task: ${task.title}`);
+                                                    setEditingTask(task);
                                                 }}
                                             >
                                                 Edit

@@ -4,10 +4,11 @@ import FluxSidebar from '../sidebar/FluxSidebar';
 import FluxCommandTerminal from '../FluxCommandTerminal';
 import { Message } from '../../types';
 import { useFluxStore } from '@/lib/store';
+import { chatWithAssistant } from '@/services/geminiService';
 
 export const AppLayout: React.FC = () => {
   // Initialize the store on mount
-  const { initialize, isInitialized, theme } = useFluxStore();
+  const { initialize, isInitialized, theme, tasks, projects } = useFluxStore();
   
   // Global Terminal State
   const [isTerminalOpen, setIsTerminalOpen] = useState(false);
@@ -50,7 +51,7 @@ export const AppLayout: React.FC = () => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
-  const handleTerminalQuery = useCallback((text: string) => {
+  const handleTerminalQuery = useCallback(async (text: string) => {
     const userMsg: Message = {
       id: Date.now().toString(),
       role: 'user',
@@ -60,18 +61,30 @@ export const AppLayout: React.FC = () => {
     setTerminalHistory((prev) => [...prev, userMsg]);
     setIsThinking(true);
 
-    // Mock AI Response - In real app, connect to geminiService here
-    setTimeout(() => {
+    try {
+      // Call AI service with context from store
+      const response = await chatWithAssistant(text, { tasks, projects });
+      
       const agentMsg: Message = {
         id: (Date.now() + 1).toString(),
         role: 'agent',
-        content: `Executing command: "${text}". \nSystem optimization complete.`,
+        content: response,
         timestamp: Date.now(),
       };
       setTerminalHistory((prev) => [...prev, agentMsg]);
+    } catch (error) {
+      console.error('[AppLayout] Terminal AI error:', error);
+      const errorMsg: Message = {
+        id: (Date.now() + 1).toString(),
+        role: 'agent',
+        content: 'Sorry, I encountered an error processing your request. Please try again.',
+        timestamp: Date.now(),
+      };
+      setTerminalHistory((prev) => [...prev, errorMsg]);
+    } finally {
       setIsThinking(false);
-    }, 1500);
-  }, []);
+    }
+  }, [tasks, projects]);
 
   return (
     <div className="flex h-screen w-screen bg-slate-50 dark:bg-slate-950 overflow-hidden text-slate-900 dark:text-slate-100">

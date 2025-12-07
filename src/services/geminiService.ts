@@ -264,4 +264,80 @@ export interface SLARiskAnalysis {
 export const isGeminiServiceConfigured = (): boolean => {
   return !!apiKey;
 };
-// 21:11:22 Dec 06, 2025
+
+/**
+ * Chat with AI assistant for terminal commands
+ */
+export const chatWithAssistant = async (message: string, context?: { tasks?: any[], projects?: any[] }): Promise<string> => {
+  if (!apiKey) {
+    // Fallback response when no API key
+    return getFallbackResponse(message);
+  }
+
+  try {
+    const client = getClient();
+    const model = client.getGenerativeModel({ model: 'gemini-2.0-flash-exp' });
+    
+    const systemContext = context ? `
+Context:
+- Tasks: ${context.tasks?.length || 0} total tasks
+- Projects: ${context.projects?.length || 0} projects
+- Task statuses: ${context.tasks?.reduce((acc, t) => { acc[t.status] = (acc[t.status] || 0) + 1; return acc; }, {} as Record<string, number>) || {}}
+` : '';
+
+    const prompt = `You are Flux AI, a helpful assistant for a project management app. Be concise and helpful.
+${systemContext}
+
+User: ${message}
+
+Respond in a helpful, concise way. If asked about tasks or projects, use the context provided.`;
+    
+    const response = await model.generateContent(prompt);
+    const text = response.response.text();
+    
+    return text || 'I apologize, I could not process that request. Please try again.';
+  } catch (error) {
+    console.error("[GeminiService] chatWithAssistant error:", error);
+    return getFallbackResponse(message);
+  }
+};
+
+// Fallback responses when API is not available
+function getFallbackResponse(message: string): string {
+  const lowerMsg = message.toLowerCase();
+  
+  if (lowerMsg.includes('help')) {
+    return `Available commands:
+• "show tasks" - View task summary
+• "create task [name]" - Create a new task
+• "status" - View system status
+• "help" - Show this help message
+
+Note: Connect Gemini API for full AI capabilities.`;
+  }
+  
+  if (lowerMsg.includes('status') || lowerMsg.includes('system')) {
+    return `System Status: Online
+• Database: Local Storage
+• Theme: Active
+• AI: Offline (no API key configured)
+
+Add VITE_GEMINI_API_KEY to enable AI features.`;
+  }
+  
+  if (lowerMsg.includes('task')) {
+    return `Task Management:
+• Use the Task Board (/app/board) to manage tasks
+• Press Ctrl+K to open this terminal anywhere
+• Click "New Task" to create tasks
+
+Note: AI task assistance requires Gemini API key.`;
+  }
+  
+  return `I'm Flux AI. I can help you manage tasks and projects.
+
+Currently running in offline mode. Add VITE_GEMINI_API_KEY for full AI capabilities.
+
+Type "help" for available commands.`;
+}
+// Dec 07, 2025

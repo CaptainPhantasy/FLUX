@@ -16,6 +16,8 @@ import {
 import { Incident } from '../types';
 import { analyzeIncident } from '../services/geminiService';
 
+const STORAGE_KEY = 'flux_incidents';
+
 const MOCK_INCIDENTS: Incident[] = [
   {
     id: '1',
@@ -48,8 +50,41 @@ const MOCK_INCIDENTS: Incident[] = [
   }
 ];
 
+// Load incidents from localStorage or use mock data
+const loadIncidents = (): Incident[] => {
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    if (stored) {
+      return JSON.parse(stored);
+    }
+  } catch (e) {
+    console.error('Failed to load incidents:', e);
+  }
+  // Save mock data on first run
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(MOCK_INCIDENTS));
+  return MOCK_INCIDENTS;
+};
+
+// Save incidents to localStorage
+const saveIncidents = (incidents: Incident[]) => {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(incidents));
+  } catch (e) {
+    console.error('Failed to save incidents:', e);
+  }
+};
+
 export const IncidentManagement: React.FC = () => {
-  const [incidents, setIncidents] = useState<Incident[]>(MOCK_INCIDENTS);
+  const [incidents, setIncidentsState] = useState<Incident[]>(loadIncidents);
+  
+  // Wrapper to also persist to localStorage
+  const setIncidents = (updater: Incident[] | ((prev: Incident[]) => Incident[])) => {
+    setIncidentsState(prev => {
+      const newIncidents = typeof updater === 'function' ? updater(prev) : updater;
+      saveIncidents(newIncidents);
+      return newIncidents;
+    });
+  };
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [newIncidentDesc, setNewIncidentDesc] = useState('');
   const [aiAnalysis, setAiAnalysis] = useState<any>(null);
