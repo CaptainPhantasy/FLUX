@@ -68,18 +68,29 @@ export default function DashboardPage() {
 
             <CreateTaskModal isOpen={isCreateTaskOpen} onClose={() => setIsCreateTaskOpen(false)} />
 
-            {/* Stats Grid - White Cards, Colored Icons */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                {stats.map((stat) => (
-                    <Card key={stat.label} padding="md" className="flex items-center gap-4 hover:shadow-md transition-all duration-200">
-                        <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${stat.bg} ${stat.color}`}>
-                            <stat.icon size={24} strokeWidth={2.5} />
-                        </div>
-                        <div>
-                            <p className="text-sm font-medium text-muted-foreground">{stat.label}</p>
-                            <h2 className="text-2xl font-bold text-card-foreground">{stat.value}</h2>
-                        </div>
-                    </Card>
+            {/* Stats Grid - Elevated Cards with Thick Shadows */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
+                {stats.map((stat, i) => (
+                    <motion.div
+                        key={stat.label}
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: i * 0.1 }}
+                    >
+                        <Card 
+                            variant="elevated" 
+                            padding="md" 
+                            className="flex items-center gap-4 cursor-pointer"
+                        >
+                            <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${stat.bg} ${stat.color} shadow-sm`}>
+                                <stat.icon size={24} strokeWidth={2.5} />
+                            </div>
+                            <div>
+                                <p className="text-sm font-medium text-muted-foreground">{stat.label}</p>
+                                <h2 className="text-2xl font-bold text-card-foreground">{stat.value}</h2>
+                            </div>
+                        </Card>
+                    </motion.div>
                 ))}
             </div>
 
@@ -96,16 +107,16 @@ export default function DashboardPage() {
                         </Button>
                     </div>
 
-                    <div className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
+                    <div className="bg-card rounded-2xl border border-border/50 shadow-floating overflow-hidden">
                         {recentTasks.length > 0 ? (
-                            <div className="divide-y divide-slate-100">
+                            <div className="divide-y divide-border/50">
                                 {recentTasks.map((task, i) => (
                                     <motion.div
                                         key={task.id}
                                         initial={{ opacity: 0, y: 10 }}
                                         animate={{ opacity: 1, y: 0 }}
                                         transition={{ delay: i * 0.05 }}
-                                        className="p-4 flex items-center justify-between hover:bg-slate-50 transition-colors group cursor-pointer"
+                                        className="p-4 flex items-center justify-between hover:bg-muted/50 transition-colors group cursor-pointer"
                                     >
                                         <div className="flex items-center gap-4">
                                             <div className={`w-2 h-2 rounded-full ${task.status === 'done' ? 'bg-emerald-500' :
@@ -164,22 +175,29 @@ export default function DashboardPage() {
 
                     <div className="space-y-3">
                         {notifications.length > 0 ? (
-                            notifications.slice(0, 5).map((notif) => (
-                                <Card key={notif.id} padding="sm" variant="flat" className="flex gap-3">
-                                    <div className="mt-1 w-2 h-2 rounded-full bg-violet-500 shrink-0" />
-                                    <div>
-                                        <p className="text-sm text-card-foreground leading-snug">
-                                            <span className="font-semibold text-foreground">{notif.title}</span> {notif.description}
-                                        </p>
-                                        <p className="text-xs text-slate-400 mt-1 font-medium">
-                                            {formatDate(notif.createdAt)}
-                                        </p>
-                                    </div>
-                                </Card>
+                            notifications.slice(0, 5).map((notif, i) => (
+                                <motion.div
+                                    key={notif.id}
+                                    initial={{ opacity: 0, x: 20 }}
+                                    animate={{ opacity: 1, x: 0 }}
+                                    transition={{ delay: i * 0.05 }}
+                                >
+                                    <Card variant="hover" padding="sm" className="flex gap-3">
+                                        <div className="mt-1 w-2 h-2 rounded-full bg-violet-500 shrink-0" />
+                                        <div>
+                                            <p className="text-sm text-card-foreground leading-snug">
+                                                <span className="font-semibold text-foreground">{notif.title}</span> {notif.description}
+                                            </p>
+                                            <p className="text-xs text-slate-400 mt-1 font-medium">
+                                                {formatDate(notif.createdAt)}
+                                            </p>
+                                        </div>
+                                    </Card>
+                                </motion.div>
                             ))
                         ) : (
-                            <Card padding="lg" variant="flat" className="text-center">
-                                <p className="text-sm text-muted-foreground">All caught up! </p>
+                            <Card padding="lg" variant="elevated" className="text-center">
+                                <p className="text-sm text-muted-foreground">All caught up!</p>
                             </Card>
                         )}
 

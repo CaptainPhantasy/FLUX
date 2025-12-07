@@ -209,3 +209,112 @@ body {
 ::-webkit-scrollbar-thumb:hover {
   background: rgba(255, 255, 255, 0.2);
 }
+
+/* ========================================
+   ELEVATED SHADOW SYSTEM
+   Rich depth with thick, soft shadows
+   ======================================== */
+
+/* Elevation Level 1 - Subtle lift */
+.shadow-lifted {
+  box-shadow: 
+    0 4px 20px -4px rgba(0, 0, 0, 0.1),
+    0 2px 8px -2px rgba(0, 0, 0, 0.05);
+}
+.dark .shadow-lifted {
+  box-shadow: 
+    0 4px 20px -4px rgba(0, 0, 0, 0.35),
+    0 2px 8px -2px rgba(0, 0, 0, 0.2);
+}
+
+/* Elevation Level 2 - Floating */
+.shadow-floating {
+  box-shadow: 
+    0 8px 30px -6px rgba(0, 0, 0, 0.15),
+    0 4px 12px -4px rgba(0, 0, 0, 0.08);
+}
+.dark .shadow-floating {
+  box-shadow: 
+    0 8px 30px -6px rgba(0, 0, 0, 0.45),
+    0 4px 12px -4px rgba(0, 0, 0, 0.25);
+}
+
+/* Elevation Level 3 - Hero/Featured */
+.shadow-elevated {
+  box-shadow: 
+    0 16px 50px -12px rgba(0, 0, 0, 0.2),
+    0 8px 20px -8px rgba(0, 0, 0, 0.1);
+}
+.dark .shadow-elevated {
+  box-shadow: 
+    0 16px 50px -12px rgba(0, 0, 0, 0.5),
+    0 8px 20px -8px rgba(0, 0, 0, 0.3);
+}
+
+/* Elevation Level 4 - Maximum depth (modals/overlays) */
+.shadow-overlay {
+  box-shadow: 
+    0 24px 70px -15px rgba(0, 0, 0, 0.25),
+    0 12px 30px -10px rgba(0, 0, 0, 0.15);
+}
+.dark .shadow-overlay {
+  box-shadow: 
+    0 24px 70px -15px rgba(0, 0, 0, 0.6),
+    0 12px 30px -10px rgba(0, 0, 0, 0.4);
+}
+
+/* Interactive card - lifts on hover, drops on press */
+.card-interactive {
+  transition: all 0.2s ease-out;
+  box-shadow: 
+    0 4px 20px -4px rgba(0, 0, 0, 0.1),
+    0 2px 8px -2px rgba(0, 0, 0, 0.05);
+}
+.dark .card-interactive {
+  box-shadow: 
+    0 4px 20px -4px rgba(0, 0, 0, 0.35),
+    0 2px 8px -2px rgba(0, 0, 0, 0.2);
+}
+
+.card-interactive:hover {
+  transform: translateY(-2px);
+  box-shadow: 
+    0 12px 40px -8px rgba(0, 0, 0, 0.18),
+    0 6px 16px -6px rgba(0, 0, 0, 0.1);
+}
+.dark .card-interactive:hover {
+  box-shadow: 
+    0 12px 40px -8px rgba(0, 0, 0, 0.5),
+    0 6px 16px -6px rgba(0, 0, 0, 0.3);
+}
+
+.card-interactive:active {
+  transform: translateY(0);
+  box-shadow: 
+    0 2px 10px -2px rgba(0, 0, 0, 0.15),
+    0 1px 4px -1px rgba(0, 0, 0, 0.08);
+}
+.dark .card-interactive:active {
+  box-shadow: 
+    0 2px 10px -2px rgba(0, 0, 0, 0.4),
+    0 1px 4px -1px rgba(0, 0, 0, 0.25);
+}
+
+/* Colored shadow for accent cards */
+.shadow-violet {
+  box-shadow: 
+    0 8px 30px -6px rgba(139, 92, 246, 0.3),
+    0 4px 12px -4px rgba(139, 92, 246, 0.15);
+}
+
+.shadow-emerald {
+  box-shadow: 
+    0 8px 30px -6px rgba(16, 185, 129, 0.3),
+    0 4px 12px -4px rgba(16, 185, 129, 0.15);
+}
+
+.shadow-amber {
+  box-shadow: 
+    0 8px 30px -6px rgba(245, 158, 11, 0.3),
+    0 4px 12px -4px rgba(245, 158, 11, 0.15);
+}

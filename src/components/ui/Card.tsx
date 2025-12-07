@@ -1,30 +1,59 @@
 // =====================================
 // FLUX - Atomic Card Component
-// Style: Clean Modern SaaS (SlothUI)
+// Style: Elevated depth with thick shadows
 // =====================================
 
 import { forwardRef, HTMLAttributes } from 'react';
 import { cn } from '@/lib/utils';
 
 export interface CardProps extends HTMLAttributes<HTMLDivElement> {
-    variant?: 'default' | 'flat' | 'outline' | 'ghost' | 'hover' | 'gradient';
+    variant?: 'default' | 'flat' | 'outline' | 'ghost' | 'hover' | 'gradient' | 'elevated';
     padding?: 'none' | 'sm' | 'md' | 'lg';
     interactive?: boolean;
 }
 
 const cardVariants = {
-    default: 'bg-card text-card-foreground border border-border shadow-sm',
+    // Default - subtle elevation
+    default: 'bg-card text-card-foreground border border-border/50 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.1)] dark:shadow-[0_4px_20px_-4px_rgba(0,0,0,0.3)]',
+    
+    // Flat - no elevation
     flat: 'bg-muted/50 text-card-foreground border-0',
+    
+    // Outline - border only
     outline: 'bg-transparent text-card-foreground border border-border',
+    
+    // Ghost - minimal
     ghost: 'bg-transparent text-card-foreground border-0',
-    hover: 'bg-card text-card-foreground border border-border shadow-sm hover:shadow-md hover:border-violet-200 dark:hover:border-violet-800 transition-all duration-200',
-    gradient: 'bg-gradient-to-br from-violet-500 to-fuchsia-500 text-white border-0 shadow-lg',
+    
+    // Hover - interactive with lift effect
+    hover: `bg-card text-card-foreground border border-border/50 
+            shadow-[0_4px_20px_-4px_rgba(0,0,0,0.1)] dark:shadow-[0_4px_20px_-4px_rgba(0,0,0,0.3)]
+            hover:shadow-[0_12px_40px_-8px_rgba(0,0,0,0.15)] dark:hover:shadow-[0_12px_40px_-8px_rgba(0,0,0,0.5)]
+            hover:border-violet-200/50 dark:hover:border-violet-700/50
+            hover:-translate-y-1
+            active:shadow-[0_2px_10px_-2px_rgba(0,0,0,0.2)] dark:active:shadow-[0_2px_10px_-2px_rgba(0,0,0,0.4)]
+            active:translate-y-0
+            transition-all duration-200 ease-out`,
+    
+    // Gradient - accent card
+    gradient: 'bg-gradient-to-br from-violet-500 to-fuchsia-500 text-white border-0 shadow-[0_8px_30px_-6px_rgba(139,92,246,0.4)]',
+    
+    // Elevated - maximum depth (for hero cards)
+    elevated: `bg-card text-card-foreground border border-border/30
+               shadow-[0_8px_30px_-6px_rgba(0,0,0,0.15),0_4px_10px_-4px_rgba(0,0,0,0.1)] 
+               dark:shadow-[0_8px_30px_-6px_rgba(0,0,0,0.4),0_4px_10px_-4px_rgba(0,0,0,0.3)]
+               hover:shadow-[0_20px_50px_-12px_rgba(0,0,0,0.2),0_8px_20px_-8px_rgba(0,0,0,0.15)]
+               dark:hover:shadow-[0_20px_50px_-12px_rgba(0,0,0,0.5),0_8px_20px_-8px_rgba(0,0,0,0.4)]
+               hover:-translate-y-1
+               active:shadow-[0_4px_15px_-4px_rgba(0,0,0,0.15)] dark:active:shadow-[0_4px_15px_-4px_rgba(0,0,0,0.35)]
+               active:translate-y-0
+               transition-all duration-200 ease-out`,
 };
 
 const paddingStyles = {
     none: '',
     sm: 'p-3',
-    md: 'p-5', // Increased default padding for spacious feel
+    md: 'p-5',
     lg: 'p-6',
 };
 
@@ -34,10 +63,10 @@ export const Card = forwardRef<HTMLDivElement, CardProps>(
             <div
                 ref={ref}
                 className={cn(
-                    'rounded-2xl', // Modern rounded corners
+                    'rounded-2xl',
                     cardVariants[variant],
                     paddingStyles[padding],
-                    interactive && 'cursor-pointer hover:shadow-md transition-shadow duration-200',
+                    interactive && 'cursor-pointer',
                     className
                 )}
                 {...props}

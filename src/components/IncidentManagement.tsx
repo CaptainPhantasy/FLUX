@@ -155,7 +155,7 @@ export const IncidentManagement: React.FC = () => {
       </div>
 
       {/* Filters & Search */}
-      <div className="flex flex-col space-y-3 bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 transition-all">
+      <div className="flex flex-col space-y-3 bg-card p-4 rounded-xl shadow-lifted border border-border/50 transition-all">
         <div className="flex space-x-4">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
@@ -198,7 +198,7 @@ export const IncidentManagement: React.FC = () => {
       </div>
 
       {/* Incident List */}
-      <div className="flex-1 bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden flex flex-col">
+      <div className="flex-1 bg-card rounded-xl shadow-floating border border-border/50 overflow-hidden flex flex-col">
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead className="bg-gray-50 dark:bg-gray-700/50">
