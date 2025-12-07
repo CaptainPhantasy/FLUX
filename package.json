@@ -1,0 +1,104 @@
+{
+  "name": "flux-app",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Flux - AI-native project management for teams who ship fast",
+  "type": "module",
+  "main": "electron/main.js",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "preview": "vite preview",
+    "lint": "eslint .",
+    "electron:dev": "concurrently \"vite\" \"wait-on http://localhost:5173 && electron .\"",
+    "electron:build": "npm run build && electron-builder",
+    "build:mac": "npm run build && electron-builder --mac",
+    "build:win": "npm run build && electron-builder --win",
+    "start": "vite"
+  },
+  "dependencies": {
+    "@google/genai": "1.0.0",
+    "@google/generative-ai": "0.24.1",
+    "@radix-ui/react-slot": "1.2.4",
+    "@supabase/supabase-js": "2.86.2",
+    "@tanstack/react-table": "8.21.2",
+    "class-variance-authority": "0.7.1",
+    "clsx": "2.1.1",
+    "framer-motion": "12.23.25",
+    "immer": "10.1.1",
+    "lucide-react": "0.511.0",
+    "openai": "6.10.0",
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
+    "react-is": "19.2.1",
+    "react-router-dom": "7.6.1",
+    "recharts": "3.5.1",
+    "simplex-noise": "4.0.3",
+    "tailwind-merge": "3.2.0",
+    "zustand": "5.0.0"
+  },
+  "devDependencies": {
+    "@dnd-kit/core": "6.3.1",
+    "@dnd-kit/sortable": "10.0.0",
+    "@dnd-kit/utilities": "3.2.2",
+    "@eslint/js": "9.39.1",
+    "@tailwindcss/vite": "4.1.7",
+    "@types/node": "24.10.1",
+    "@types/react": "19.2.5",
+    "@types/react-dom": "19.2.3",
+    "@vitejs/plugin-react": "5.1.1",
+    "autoprefixer": "10.4.20",
+    "concurrently": "9.1.0",
+    "cross-env": "7.0.3",
+    "dotenv": "17.2.3",
+    "electron": "35.7.5",
+    "electron-builder": "26.0.0",
+    "eslint": "9.39.1",
+    "eslint-plugin-react-hooks": "7.0.1",
+    "eslint-plugin-react-refresh": "0.4.24",
+    "globals": "16.5.0",
+    "postcss": "8.5.4",
+    "tailwindcss": "4.1.7",
+    "tsx": "4.21.0",
+    "typescript": "5.9.3",
+    "typescript-eslint": "8.46.4",
+    "vite": "npm:rolldown-vite@7.2.5",
+    "wait-on": "8.0.0"
+  },
+  "overrides": {
+    "vite": "npm:rolldown-vite@7.2.5"
+  },
+  "build": {
+    "appId": "com.flux.app",
+    "productName": "Flux",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*",
+      "electron/**/*"
+    ],
+    "mac": {
+      "target": [
+        "dmg",
+        "zip"
+      ],
+      "category": "public.app-category.productivity",
+      "icon": "public/icon.icns"
+    },
+    "win": {
+      "target": [
+        "nsis",
+        "portable"
+      ],
+      "icon": "public/icon.ico"
+    },
+    "linux": {
+      "target": [
+        "AppImage",
+        "deb"
+      ],
+      "category": "Office"
+    }
+  }
+}
