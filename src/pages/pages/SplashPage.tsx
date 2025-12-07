@@ -33,9 +33,17 @@ export default function SplashPage() {
             speed="fast"
             waveOpacity={0.5}
         >
-            <div
-                className="z-50 flex flex-col items-center justify-center p-4 cursor-pointer"
+            <button
+                type="button"
+                className="z-50 flex flex-col items-center justify-center p-4 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-400/80 rounded-xl bg-transparent"
                 onClick={() => navigate('/login')}
+                onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        navigate('/login');
+                    }
+                }}
+                aria-label="Enter Flux app"
             >
                 <motion.div
                     initial={{ opacity: 0, scale: 0.95 }}
@@ -70,7 +78,7 @@ export default function SplashPage() {
                         <Loader2 className="w-8 h-8 text-violet-400/50 animate-spin" />
                     </motion.div>
                 </motion.div>
-            </div>
+            </button>
         </WavyBackground>
     );
 }
