@@ -67,6 +67,7 @@ interface UISlice {
     theme: 'light' | 'dark' | 'system';
     sidebarCollapsed: boolean;
     isOnboardingComplete: boolean;
+    workflowMode: 'agile' | 'ccaas' | 'itsm';
 }
 
 interface AppSlice {
@@ -150,6 +151,7 @@ interface FluxActions {
     toggleSidebar: () => void;
     setSidebarCollapsed: (collapsed: boolean) => void;
     completeOnboarding: () => void;
+    setWorkflowMode: (mode: 'agile' | 'ccaas' | 'itsm') => void;
 
     // Error handling
     setError: (error: string | null) => void;
@@ -194,6 +196,7 @@ const initialState: FluxState = {
     theme: 'dark',
     sidebarCollapsed: false,
     isOnboardingComplete: false,
+    workflowMode: 'agile',
 
     // App
     config: {
@@ -729,6 +732,13 @@ export const useFluxStore = create<FluxState & FluxActions>()(
                     });
                 },
 
+                setWorkflowMode: (mode) => {
+                    console.log('[Store] setWorkflowMode called with:', mode);
+                    set((state) => {
+                        state.workflowMode = mode;
+                    });
+                },
+
                 // ==================
                 // Error Handling
                 // ==================
@@ -746,12 +756,13 @@ export const useFluxStore = create<FluxState & FluxActions>()(
             })),
             {
                 name: 'flux-store',
-                version: 1,
+                version: 2,
                 partialize: (state) => ({
                     // Only persist UI preferences and config
                     theme: state.theme,
                     sidebarCollapsed: state.sidebarCollapsed,
                     isOnboardingComplete: state.isOnboardingComplete,
+                    workflowMode: state.workflowMode,
                     config: state.config,
                 }),
             }
@@ -822,8 +833,10 @@ export function useUI() {
     return useFluxStore((state) => ({
         theme: state.theme,
         sidebarCollapsed: state.sidebarCollapsed,
+        workflowMode: state.workflowMode,
         setTheme: state.setTheme,
         toggleSidebar: state.toggleSidebar,
         setSidebarCollapsed: state.setSidebarCollapsed,
+        setWorkflowMode: state.setWorkflowMode,
     }));
 }

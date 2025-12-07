@@ -29,37 +29,37 @@ Built from the ground up by **Legacy AI**, Flux isn't another retrofitted tool w
 
 Flux is a next-generation project management and IT service management (ITSM) platform that unifies:
 
-### 🧠 AI-Powered Intelligence
+### AI-Powered Intelligence
 - **Flux AI Architect**: Describe your project in plain English. Watch as Gemini 2.0 Flash breaks it down into prioritized, actionable tasks with realistic estimates—in seconds.
 - **Workflow AI Optimization**: Upload any workflow and receive instant bottleneck analysis, efficiency scoring, and automation recommendations.
 - **Incident Triage AI**: Critical issues are automatically categorized, severity-scored, and routed to the right team member before you finish your morning coffee.
 - **SLA Breach Prediction**: Machine learning that sees problems before they happen, not after.
 
-### 📋 Complete Project Lifecycle Management
+### Complete Project Lifecycle Management
 - **Kanban Boards** with drag-and-drop simplicity and real-time sync
 - **Sprint Management** with burndown charts and velocity tracking
 - **Backlog Grooming** powered by AI prioritization
 - **Custom Field Builder** for any workflow
 - **Rich Document Editor** for specifications, wikis, and knowledge bases
 
-### 🔧 Enterprise-Grade ITSM
+### Enterprise-Grade ITSM
 - **Incident Console** with severity escalation
 - **Service Catalog** for self-service requests
 - **Change Management** with approval workflows and risk assessment
 - **SLA Tracker** with compliance monitoring and breach alerts
 
-### 🔌 Seamless Integrations Hub
+### Seamless Integrations Hub
 - **One-Click Import** from Jira, Asana, Trello, Monday, Linear, and CSV
 - **Communication Bridges**: Slack, Microsoft Teams, Discord
 - **Dev Tools**: GitHub, GitLab, Bitbucket
 - **Design**: Figma, Sketch
 
-### 📊 Real-Time Analytics
+### Real-Time Analytics
 - Performance dashboards with trend analysis
 - User segmentation and activity metrics
 - Export-ready reporting for stakeholders
 
-### 💬 Conversational AI Terminal
+### Conversational AI Terminal
 Forget navigating menus. Just type what you want:
 - *"Create a high-priority task for the API refactor"*
 - *"Show me all tasks in review"*
@@ -101,7 +101,7 @@ Campaigns have hard deadlines. Clients expect visibility. Creative teams need st
 
 Let's be direct. You're not buying software. You're buying **time**.
 
-### ⏱️ The Time Equation
+### The Time Equation
 
 | Task | Traditional Tools | With Flux | Time Saved |
 |------|------------------|-----------|------------|
@@ -123,7 +123,7 @@ The true measure of any tool isn't the feature list—it's how it integrates int
 
 ---
 
-### 🧑‍💻 JOURNEY 1: Marcus Chen, Senior Software Engineer
+### JOURNEY 1: Marcus Chen, Senior Software Engineer
 **Company**: QuantumStack (Series B SaaS Startup, 47 employees)  
 **Location**: Austin, TX
 
@@ -199,12 +199,12 @@ Before shutting his laptop, Marcus opens the Flux terminal and types:
 
 Flux responds:
 ```
-📊 Daily Summary for Marcus Chen
+Daily Summary for Marcus Chen
 
 Tasks Completed: 3
-  • API timeout bug investigation → DONE
-  • SSO feature breakdown → DONE
-  • Code review for Emma's PR → DONE
+  - API timeout bug investigation: DONE
+  - SSO feature breakdown: DONE
+  - Code review for Emma's PR: DONE
 
 Contributions: 2 PRs merged, 1 PR opened
 Sprint Progress: 78% complete (3 days remaining)
@@ -225,7 +225,7 @@ He smiles. Swipes it away. Doesn't open the app.
 
 ---
 
-### 👩‍💼 JOURNEY 2: Priya Sharma, IT Service Desk Manager
+### JOURNEY 2: Priya Sharma, IT Service Desk Manager
 **Company**: Midwest Regional Healthcare (2,400 employees, 3 hospitals)  
 **Location**: Indianapolis, IN
 
@@ -274,9 +274,9 @@ Flux's **Change Management** module displays all pending changes:
 
 | Change Request | Type | Risk | AI Assessment |
 |----------------|------|------|---------------|
-| CHG-441: Firewall rule update | Standard | Low | ✅ Auto-approved (policy match) |
-| CHG-442: EMR database migration | Normal | High | ⚠️ 3 affected systems, recommend weekend window |
-| CHG-443: VPN client upgrade | Normal | Medium | ✅ Similar change succeeded 2 weeks ago |
+| CHG-441: Firewall rule update | Standard | Low | [OK] Auto-approved (policy match) |
+| CHG-442: EMR database migration | Normal | High | [WARN] 3 affected systems, recommend weekend window |
+| CHG-443: VPN client upgrade | Normal | Medium | [OK] Similar change succeeded 2 weeks ago |
 
 The AI pre-analyzed risk, identified dependencies, and even recommended maintenance windows based on historical system load patterns.
 
@@ -326,7 +326,7 @@ She puts the phone on the charger and actually sleeps.
 
 ---
 
-### 🎨 JOURNEY 3: Jordan Reyes, Creative Director
+### JOURNEY 3: Jordan Reyes, Creative Director
 **Company**: Neon & Flux Creative Agency (22 employees)  
 **Location**: Brooklyn, NY
 
@@ -415,7 +415,7 @@ Jordan smiles. *"We have a good system."*
 
 Jordan's at a gallery opening in DUMBO. Phone buzzes—but it's just the daily Flux digest:
 
-> 📊 Daily Wrap: 12 tasks completed across 3 projects. Nova on track. ThriftKing caught up after reassignment. CityBrew kickoff successful.
+> Daily Wrap: 12 tasks completed across 3 projects. Nova on track. ThriftKing caught up after reassignment. CityBrew kickoff successful.
 
 They read it, smile, and put the phone away.
 
@@ -452,17 +452,17 @@ Every week you wait is a week your competitors pull ahead.
 
 ## The Flux Deployment Options
 
-### ☁️ Flux Cloud
+### Flux Cloud
 Managed infrastructure. Zero setup. Real-time sync across unlimited devices. Auth, edge functions, and backups handled.
 
 **Best for**: Teams that want to start shipping in minutes, not weeks.
 
-### 🏢 Self-Hosted
+### Self-Hosted
 Deploy on your own PostgreSQL infrastructure. Full data sovereignty. Enterprise security controls.
 
 **Best for**: Regulated industries, government, organizations with strict compliance requirements.
 
-### 💻 Local Mode
+### Local Mode
 Offline-first architecture. Data persists on-device via IndexedDB. Perfect for individual contributors or air-gapped environments.
 
 **Best for**: Solo operators, security researchers, disconnected field work.
@@ -536,15 +536,15 @@ The platform is live. The AI is trained. The integrations are ready. The only mi
 
 ---
 
-*Built with ⚡ by Legacy AI*  
+*Built by Legacy AI*  
 *San Francisco • Austin • Brooklyn*
 
 ---
 
 **Questions?**  
-📧 hello@legacyai.io  
-📖 docs.flux.legacyai.io  
-💬 Join our Discord: discord.gg/fluxpm
+Email: hello@legacyai.io  
+Docs: docs.flux.legacyai.io  
+Discord: discord.gg/fluxpm
 
 </div>
 

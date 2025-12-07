@@ -317,17 +317,17 @@ export const toolRegistry: ToolDefinition[] = [
             ).length;
 
             const summary = [
-                `📊 Project Summary`,
+                `Project Summary`,
                 ``,
                 `Tasks: ${activeTasks.length} total`,
-                `  • To Do: ${statusCounts.todo}`,
-                `  • In Progress: ${statusCounts['in-progress']}`,
-                `  • In Review: ${statusCounts.review}`,
-                `  • Done: ${statusCounts.done}`,
+                `  - To Do: ${statusCounts.todo}`,
+                `  - In Progress: ${statusCounts['in-progress']}`,
+                `  - In Review: ${statusCounts.review}`,
+                `  - Done: ${statusCounts.done}`,
                 ``,
-                `🔥 High Priority: ${highPriority} task(s)`,
-                `📬 Notifications: ${notifications.filter(n => !n.isRead).length} unread`,
-                `📁 Projects: ${projects.length}`,
+                `High Priority: ${highPriority} task(s)`,
+                `Notifications: ${notifications.filter(n => !n.isRead).length} unread`,
+                `Projects: ${projects.length}`,
             ].join('\n');
 
             return {

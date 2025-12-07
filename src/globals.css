@@ -121,49 +121,51 @@
 
 /* CSS Variables for Light/Dark Mode */
 :root {
-  --background: 0 0% 100%;
-  --foreground: 240 10% 3.9%;
+  /* OPUS (Claude-inspired) warm, approachable palette */
+  /* Key: primary orange #E67D22; supporting coral #C15F3C; creams & warm grays */
+  --background: 42 22% 95%;        /* #F4F3EE Pampas */
+  --foreground: 24 44% 9%;         /* #1F130C deep coffee */
   --card: 0 0% 100%;
-  --card-foreground: 240 10% 3.9%;
+  --card-foreground: 24 44% 9%;
   --popover: 0 0% 100%;
-  --popover-foreground: 240 10% 3.9%;
-  --primary: 262.1 83.3% 57.8%;
-  --primary-foreground: 210 20% 98%;
-  --secondary: 240 4.8% 95.9%;
-  --secondary-foreground: 240 5.9% 10%;
-  --muted: 240 4.8% 95.9%;
-  --muted-foreground: 240 3.8% 46.1%;
-  --accent: 240 4.8% 95.9%;
-  --accent-foreground: 240 5.9% 10%;
-  --destructive: 0 84.2% 60.2%;
-  --destructive-foreground: 0 0% 98%;
-  --border: 240 5.9% 90%;
-  --input: 240 5.9% 90%;
-  --ring: 262.1 83.3% 57.8%;
+  --popover-foreground: 24 44% 9%;
+  --primary: 27 79% 52%;           /* #E67D22 Claude orange */
+  --primary-foreground: 0 0% 100%;
+  --secondary: 32 54% 89%;         /* #F5E6D3 cream/tan */
+  --secondary-foreground: 22 36% 15%; /* #2f1c12 */
+  --muted: 34 28% 88%;             /* #E8E1D8 warm gray-beige */
+  --muted-foreground: 30 13% 50%;  /* #8A7F73 */
+  --accent: 33 32% 64%;            /* #C4A584 muted tan */
+  --accent-foreground: 22 36% 15%;
+  --destructive: 2 66% 51%;        /* warm red */
+  --destructive-foreground: 0 0% 100%;
+  --border: 30 22% 84%;            /* soft warm border */
+  --input: 30 22% 84%;
+  --ring: 27 79% 52%;
   --radius: 1rem;
 }
 
 .dark {
-  /* Deep indigo-blue like Claude's site */
-  --background: 234 45% 8%;
-  --foreground: 210 40% 98%;
-  --card: 234 40% 12%;
-  --card-foreground: 210 40% 98%;
-  --popover: 234 40% 12%;
-  --popover-foreground: 210 40% 98%;
-  --primary: 263.4 70% 60%;
-  --primary-foreground: 210 40% 98%;
-  --secondary: 234 35% 18%;
-  --secondary-foreground: 210 40% 98%;
-  --muted: 234 35% 16%;
-  --muted-foreground: 220 20% 65%;
-  --accent: 263.4 50% 25%;
-  --accent-foreground: 210 40% 98%;
-  --destructive: 0 62.8% 45%;
-  --destructive-foreground: 210 40% 98%;
-  --border: 234 30% 22%;
-  --input: 234 35% 18%;
-  --ring: 263.4 70% 60%;
+  /* Warm, low-glare dark inspired by Claude/Opus */
+  --background: 27 29% 10%;        /* #1C150F espresso */
+  --foreground: 30 38% 92%;        /* #F4EDE3 warm light */
+  --card: 25 24% 13%;              /* #241A12 */
+  --card-foreground: 30 38% 92%;
+  --popover: 25 24% 13%;
+  --popover-foreground: 30 38% 92%;
+  --primary: 27 79% 52%;           /* keep brand orange */
+  --primary-foreground: 0 0% 100%;
+  --secondary: 27 22% 17%;         /* #2E241C */
+  --secondary-foreground: 30 38% 92%;
+  --muted: 27 18% 19%;             /* #2A2119 */
+  --muted-foreground: 33 12% 63%;  /* #B1ADA1 muted warm gray */
+  --accent: 33 32% 64%;            /* #C4A584 for subtle highlights */
+  --accent-foreground: 22 36% 15%;
+  --destructive: 2 66% 54%;
+  --destructive-foreground: 0 0% 100%;
+  --border: 27 18% 24%;            /* #3C2F26 */
+  --input: 27 18% 24%;
+  --ring: 27 79% 52%;
 }
 
 /* Base Styles */
@@ -321,6 +323,54 @@ body {
     0 4px 12px -4px rgba(245, 158, 11, 0.15);
 }
 
+/* ===================================================
+   GLOBAL SHADOW OVERRIDES (apply everywhere)
+   Makes all Tailwind shadow utilities thick/visible
+   =================================================== */
+:root .shadow-sm {
+  box-shadow:
+    0 12px 35px -8px rgba(0,0,0,0.18),
+    0 6px 15px -5px rgba(0,0,0,0.12) !important;
+}
+.dark .shadow-sm {
+  box-shadow:
+    0 12px 35px -8px rgba(0,0,0,0.55),
+    0 6px 15px -5px rgba(0,0,0,0.35) !important;
+}
+
+:root .shadow-md {
+  box-shadow:
+    0 14px 45px -10px rgba(0,0,0,0.22),
+    0 8px 20px -6px rgba(0,0,0,0.15) !important;
+}
+.dark .shadow-md {
+  box-shadow:
+    0 14px 45px -10px rgba(0,0,0,0.6),
+    0 8px 20px -6px rgba(0,0,0,0.4) !important;
+}
+
+:root .shadow-lg {
+  box-shadow:
+    0 16px 50px -10px rgba(0,0,0,0.26),
+    0 10px 25px -6px rgba(0,0,0,0.18) !important;
+}
+.dark .shadow-lg {
+  box-shadow:
+    0 16px 50px -10px rgba(0,0,0,0.65),
+    0 10px 25px -6px rgba(0,0,0,0.45) !important;
+}
+
+:root .shadow-xl, :root .shadow-2xl {
+  box-shadow:
+    0 20px 60px -12px rgba(0,0,0,0.30),
+    0 12px 30px -8px rgba(0,0,0,0.22) !important;
+}
+.dark .shadow-xl, .dark .shadow-2xl {
+  box-shadow:
+    0 20px 60px -12px rgba(0,0,0,0.72),
+    0 12px 30px -8px rgba(0,0,0,0.5) !important;
+}
+
 /* Custom Scrollbar - Light variant */
 .custom-scrollbar::-webkit-scrollbar {
   width: 4px;
@@ -367,3 +417,135 @@ ul[data-type="taskList"] li > div {
   pointer-events: none;
   height: 0;
 }
+
+/* =====================================
+   Buttery Smooth Animation Utilities
+   ===================================== */
+
+/* Smooth ease for most transitions */
+.ease-smooth {
+  transition-timing-function: cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+/* Spring-like ease for bouncy feel */
+.ease-spring {
+  transition-timing-function: cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* Deceleration ease for settling motion */
+.ease-decel {
+  transition-timing-function: cubic-bezier(0.0, 0.0, 0.2, 1);
+}
+
+/* Acceleration ease for exit motion */
+.ease-accel {
+  transition-timing-function: cubic-bezier(0.4, 0.0, 1, 1);
+}
+
+/* Smooth opacity fade */
+.transition-opacity-smooth {
+  transition: opacity 250ms cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+/* Smooth transform (position, scale, rotation) */
+.transition-transform-smooth {
+  transition: transform 300ms cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+/* All properties smooth */
+.transition-all-smooth {
+  transition: all 300ms cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+/* Hover lift effect */
+.hover-lift {
+  transition: transform 250ms cubic-bezier(0.25, 0.46, 0.45, 0.94), 
+              box-shadow 250ms cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+.hover-lift:hover {
+  transform: translateY(-4px);
+}
+
+/* Press effect */
+.active-press:active {
+  transform: translateY(1px) scale(0.98);
+  transition: transform 100ms ease-out;
+}
+
+/* Smooth focus ring */
+.focus-ring-smooth:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px hsl(var(--background)), 0 0 0 4px hsl(var(--ring));
+  transition: box-shadow 200ms ease-out;
+}
+
+/* Stagger animation helper */
+@keyframes stagger-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-stagger-in {
+  animation: stagger-fade-in 300ms cubic-bezier(0.25, 0.46, 0.45, 0.94) backwards;
+}
+
+/* Smooth pulse for loading states */
+@keyframes pulse-smooth {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.6;
+  }
+}
+
+.animate-pulse-smooth {
+  animation: pulse-smooth 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* =====================================
+   Gradient Blob Animations (for frames)
+   ===================================== */
+.blob {
+  position: absolute;
+  width: var(--size, 80%);
+  height: var(--size, 80%);
+  top: calc(50% - var(--size, 80%)/2);
+  left: calc(50% - var(--size, 80%)/2);
+  mix-blend-mode: var(--blending-value, screen);
+  filter: blur(20px);
+}
+.blob-1 { background: radial-gradient(circle at center, rgba(var(--first-color, 230,125,34), 0.7) 0, rgba(var(--first-color,230,125,34), 0) 50%); transform-origin: center center; }
+.blob-2 { background: radial-gradient(circle at center, rgba(var(--second-color,193,95,60), 0.7) 0, rgba(var(--second-color,193,95,60), 0) 50%); transform-origin: calc(50% - 400px); }
+.blob-3 { background: radial-gradient(circle at center, rgba(var(--third-color,100,220,255), 0.7) 0, rgba(var(--third-color,100,220,255), 0) 50%); transform-origin: calc(50% + 400px); }
+.blob-4 { background: radial-gradient(circle at center, rgba(var(--fourth-color,140,100,255), 0.7) 0, rgba(var(--fourth-color,140,100,255), 0) 50%); transform-origin: calc(50% - 200px); }
+.blob-5 { background: radial-gradient(circle at center, rgba(var(--fifth-color,255,179,138), 0.7) 0, rgba(var(--fifth-color,255,179,138), 0) 50%); transform-origin: calc(50% - 800px); }
+.pointer-blob { background: radial-gradient(circle at center, rgba(var(--pointer-color,230,125,34), 0.75) 0, rgba(var(--pointer-color,230,125,34), 0) 50%); width: 120%; height: 120%; top: -10%; left: -10%; opacity: 0.7; }
+
+@keyframes moveVertical {
+  0% { transform: translateY(-50%); }
+  50% { transform: translateY(50%); }
+  100% { transform: translateY(-50%); }
+}
+@keyframes moveHorizontal {
+  0% { transform: translateX(-50%) translateY(-10%); }
+  50% { transform: translateX(50%) translateY(10%); }
+  100% { transform: translateX(-50%) translateY(-10%); }
+}
+@keyframes moveInCircle {
+  0% { transform: rotate(0deg); }
+  50% { transform: rotate(180deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.animate-first { animation: moveVertical 30s ease infinite; }
+.animate-second { animation: moveInCircle 20s reverse infinite; }
+.animate-third { animation: moveInCircle 40s linear infinite; }
+.animate-fourth { animation: moveHorizontal 40s ease infinite; }
+.animate-fifth { animation: moveInCircle 20s ease infinite; }

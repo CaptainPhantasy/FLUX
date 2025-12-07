@@ -4,7 +4,7 @@
 // Style: Clean Modern SaaS
 // =====================================
 
-import { useMemo, useState, useCallback } from 'react';
+import { useMemo, useState, useCallback, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import {
     useReactTable,
@@ -42,7 +42,7 @@ function getFileIcon(mimeType: string) {
 }
 
 export default function AssetsPage() {
-    const { assets, uploadAsset, deleteAsset } = useFluxStore();
+    const { assets, uploadAsset, deleteAsset, fetchAssets } = useFluxStore();
     const [viewMode, setViewMode] = useState<'grid' | 'table'>('table');
     const [globalFilter, setGlobalFilter] = useState('');
     const [sorting, setSorting] = useState<SortingState>([]);
@@ -70,6 +70,10 @@ export default function AssetsPage() {
         setIsUploading(false);
         e.target.value = '';
     }, [uploadAsset]);
+
+    useEffect(() => {
+        fetchAssets();
+    }, [fetchAssets]);
 
     const columns = useMemo(() => [
         columnHelper.accessor('name', {
@@ -280,54 +284,55 @@ export default function AssetsPage() {
                 ) : (
                     <div className="overflow-y-auto pb-20">
                         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-6">
-                            {assets.map(asset => {
-                                const Icon = getFileIcon(asset.mimeType);
-                                return (
-                                    <Card
-                                        key={asset.id}
-                                        variant="hover"
-                                        padding="none"
-                                        className="group overflow-hidden"
-                                    >
-                                        <div className="aspect-square bg-muted border-b border-border flex items-center justify-center relative">
-                                            {asset.mimeType.startsWith('image/') ? (
-                                                <img src={asset.url} alt={asset.name} className="w-full h-full object-cover" />
-                                            ) : (
-                                                <Icon className="w-12 h-12 text-slate-300" strokeWidth={1.5} />
-                                            )}
+                        {assets.map(asset => {
+                            const Icon = getFileIcon(asset.mimeType);
+                            return (
+                                <Card
+                                    key={asset.id}
+                                    variant="hover"
+                                    padding="none"
+                                    className="group overflow-hidden shadow-md hover:shadow-lg"
+                                >
+                                    <div className="aspect-square bg-muted border-b border-border flex items-center justify-center relative">
+                                        {asset.mimeType.startsWith('image/') ? (
+                                            <img src={asset.url} alt={asset.name} className="w-full h-full object-cover" />
+                                        ) : (
+                                            <Icon className="w-12 h-12 text-slate-300" strokeWidth={1.5} />
+                                        )}
 
-                                            {/* Overlay Actions */}
-                                            <div className="absolute inset-0 bg-slate-900/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2 backdrop-blur-sm">
-                                                <button
-                                                    onClick={() => deleteAsset(asset.id)}
-                                                    className="p-2 bg-white text-slate-900 rounded-lg hover:bg-red-50 hover:text-red-600 transition-colors"
-                                                >
-                                                    <Trash2 size={16} />
-                                                </button>
-                                                <a
-                                                    href={asset.url}
-                                                    target="_blank"
-                                                    rel="noopener noreferrer"
-                                                    className="p-2 bg-white text-slate-900 rounded-lg hover:text-violet-600 transition-colors"
-                                                >
-                                                    <Download size={16} />
-                                                </a>
-                                            </div>
+                                        {/* Overlay Actions */}
+                                        <div className="absolute inset-0 bg-slate-900/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2 backdrop-blur-sm">
+                                            <button
+                                                onClick={() => deleteAsset(asset.id)}
+                                                className="p-2 bg-white text-slate-900 rounded-lg hover:bg-red-50 hover:text-red-600 transition-colors"
+                                            >
+                                                <Trash2 size={16} />
+                                            </button>
+                                            <a
+                                                href={asset.url}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                download={asset.name}
+                                                className="p-2 bg-white text-slate-900 rounded-lg hover:text-violet-600 transition-colors"
+                                            >
+                                                <Download size={16} />
+                                            </a>
                                         </div>
-                                        <div className="p-3">
-                                            <p className="text-sm font-semibold text-card-foreground truncate" title={asset.name}>
-                                                {asset.name}
-                                            </p>
-                                            <div className="flex items-center justify-between mt-1">
-                                                <span className="text-[10px] uppercase font-bold text-slate-400 bg-muted px-1.5 py-0.5 rounded">
-                                                    {asset.type}
-                                                </span>
-                                                <span className="text-xs text-slate-400">{formatFileSize(asset.size)}</span>
-                                            </div>
+                                    </div>
+                                    <div className="p-3">
+                                        <p className="text-sm font-semibold text-card-foreground truncate" title={asset.name}>
+                                            {asset.name}
+                                        </p>
+                                        <div className="flex items-center justify-between mt-1">
+                                            <span className="text-[10px] uppercase font-bold text-slate-400 bg-muted px-1.5 py-0.5 rounded">
+                                                {asset.type}
+                                            </span>
+                                            <span className="text-xs text-slate-400">{formatFileSize(asset.size)}</span>
                                         </div>
-                                    </Card>
-                                );
-                            })}
+                                    </div>
+                                </Card>
+                            );
+                        })}
                         </div>
                     </div>
                 )}

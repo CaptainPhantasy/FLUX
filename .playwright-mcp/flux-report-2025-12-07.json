@@ -1,0 +1,66 @@
+{
+  "generatedAt": "2025-12-07T04:31:02.716Z",
+  "timeRange": "Last 7 Days",
+  "summary": {
+    "totalTasks": 9,
+    "completedTasks": 5,
+    "inProgressTasks": 0,
+    "completionRate": "56%"
+  },
+  "tasks": [
+    {
+      "title": "Design System Audit",
+      "status": "review",
+      "priority": "high",
+      "createdAt": "2025-12-07T03:10:45.992Z"
+    },
+    {
+      "title": "Integrate Gemini API",
+      "status": "done",
+      "priority": "high",
+      "createdAt": "2025-12-07T03:10:45.992Z"
+    },
+    {
+      "title": "Fix Navigation Bug on Mobile",
+      "status": "done",
+      "priority": "medium",
+      "createdAt": "2025-12-05T03:10:45.992Z"
+    },
+    {
+      "title": "Optimize React Rendering",
+      "status": "done",
+      "priority": "high",
+      "createdAt": "2025-12-04T03:10:45.992Z"
+    },
+    {
+      "title": "Setup CI/CD Pipeline",
+      "status": "done",
+      "priority": "low",
+      "createdAt": "2025-11-27T03:10:45.992Z"
+    },
+    {
+      "title": "User Interviews Round 1",
+      "status": "done",
+      "priority": "medium",
+      "createdAt": "2025-11-23T03:10:45.992Z"
+    },
+    {
+      "title": "MORE COWBELL",
+      "status": "ready",
+      "priority": "urgent",
+      "createdAt": "2025-12-07T03:42:24.290Z"
+    },
+    {
+      "title": "DRGHETRH",
+      "status": "assigned",
+      "priority": "medium",
+      "createdAt": "2025-12-07T04:29:46.119Z"
+    },
+    {
+      "title": "DFGDFBDFB",
+      "status": "assigned",
+      "priority": "medium",
+      "createdAt": "2025-12-07T04:29:56.468Z"
+    }
+  ]
+}

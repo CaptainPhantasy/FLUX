@@ -1,7 +1,7 @@
 // @ts-nocheck
 // =====================================
-// FLUX - Agile Sprint Planning
-// Style: Glassmorphism & Glowing Accents
+// FLUX - Sprint Planning (Workflow-Aware)
+// Supports: Agile, CCaaS, ITSM modes
 // Last Updated: Dec 07, 2025
 // =====================================
 
@@ -15,12 +15,16 @@ import {
     Calendar,
     Plus,
     Play,
-    Pause
+    Pause,
+    Headphones,
+    Server
 } from 'lucide-react';
 import { Button, Card, Badge } from '@/components/ui';
 import { CheckCircle2, Clock, AlertCircle, Users } from 'lucide-react';
 import { useFluxStore } from '@/lib/store';
 import { CreateTaskModal } from '@/features/tasks';
+import { WorkflowSelector } from '@/components/WorkflowSelector';
+import { getWorkflow } from '@/lib/workflows';
 
 // Local storage for sprint config
 const SPRINT_KEY = 'flux_sprint_config';
@@ -33,59 +37,150 @@ const getSprintConfig = () => {
     }
 };
 
+// Workflow-specific icons
+const WORKFLOW_ICONS = {
+    agile: Rocket,
+    ccaas: Headphones,
+    itsm: Server,
+};
+
+// Workflow-specific colors
+const WORKFLOW_COLORS = {
+    agile: { bg: 'bg-emerald-500/10', text: 'text-emerald-500', accent: 'emerald' },
+    ccaas: { bg: 'bg-blue-500/10', text: 'text-blue-500', accent: 'blue' },
+    itsm: { bg: 'bg-violet-500/10', text: 'text-violet-500', accent: 'violet' },
+};
+
 export default function SprintPage() {
-    const { tasks, updateTask } = useFluxStore();
+    const { tasks, updateTask, workflowMode } = useFluxStore();
     const [activeTab, setActiveTab] = useState('board');
     const [isCreateTaskOpen, setIsCreateTaskOpen] = useState(false);
     const [sprintConfig, setSprintConfig] = useState(getSprintConfig);
 
-    // Calculate real stats from tasks
-    const stats = useMemo(() => ({
-        completed: tasks.filter(t => t.status === 'done').length,
-        inProgress: tasks.filter(t => t.status === 'in-progress').length,
-        blocked: tasks.filter(t => t.priority === 'urgent').length,
-        todo: tasks.filter(t => t.status === 'todo').length,
-        codeReview: tasks.filter(t => t.status === 'code-review').length,
-        testing: tasks.filter(t => t.status === 'testing').length,
-    }), [tasks]);
+    // Get workflow configuration
+    const workflow = useMemo(() => getWorkflow(workflowMode), [workflowMode]);
+    const WorkflowIcon = WORKFLOW_ICONS[workflowMode];
+    const colors = WORKFLOW_COLORS[workflowMode];
+
+    // Workflow-specific labels
+    const getLabels = () => {
+        switch (workflowMode) {
+            case 'ccaas':
+                return { 
+                    item: 'Ticket', 
+                    items: 'Tickets', 
+                    sprint: 'Queue',
+                    sprintPlural: 'Queues',
+                    planning: 'Queue Management'
+                };
+            case 'itsm':
+                return { 
+                    item: 'Incident', 
+                    items: 'Incidents', 
+                    sprint: 'Change Window',
+                    sprintPlural: 'Change Windows',
+                    planning: 'Change Planning'
+                };
+            default:
+                return { 
+                    item: 'Task', 
+                    items: 'Tasks', 
+                    sprint: 'Sprint',
+                    sprintPlural: 'Sprints',
+                    planning: 'Sprint Planning'
+                };
+        }
+    };
+    const labels = getLabels();
+
+    // Get active workflow columns (exclude done/closed for the board view)
+    const activeColumns = useMemo(() => {
+        return workflow.columns.filter(col => col.category !== 'backlog');
+    }, [workflow]);
+
+    // Calculate stats based on workflow columns
+    const stats = useMemo(() => {
+        const doneColumns = workflow.columns.filter(c => c.category === 'done').map(c => c.id);
+        const activeColumnIds = workflow.columns.filter(c => c.category === 'active').map(c => c.id);
+        const reviewColumnIds = workflow.columns.filter(c => c.category === 'review').map(c => c.id);
+        
+        return {
+            completed: tasks.filter(t => doneColumns.includes(t.status)).length,
+            inProgress: tasks.filter(t => activeColumnIds.includes(t.status)).length,
+            blocked: tasks.filter(t => t.priority === 'urgent').length,
+            review: tasks.filter(t => reviewColumnIds.includes(t.status)).length,
+            total: tasks.length,
+        };
+    }, [tasks, workflow]);
 
     // Group tasks by status for sprint board
-    const tasksByStatus = useMemo(() => ({
-        'todo': tasks.filter(t => t.status === 'todo'),
-        'in-progress': tasks.filter(t => t.status === 'in-progress'),
-        'code-review': tasks.filter(t => t.status === 'code-review'),
-        'testing': tasks.filter(t => t.status === 'testing'),
-        'done': tasks.filter(t => t.status === 'done'),
-    }), [tasks]);
+    const tasksByStatus = useMemo(() => {
+        const grouped = {};
+        workflow.columns.forEach(col => {
+            grouped[col.id] = tasks.filter(t => t.status === col.id);
+        });
+        return grouped;
+    }, [tasks, workflow]);
+
+    // Get backlog items
+    const backlogItems = useMemo(() => {
+        const backlogStatuses = workflow.columns.filter(c => c.category === 'backlog').map(c => c.id);
+        return tasks.filter(t => backlogStatuses.includes(t.status));
+    }, [tasks, workflow]);
 
     const handleSaveSprintConfig = () => {
         localStorage.setItem(SPRINT_KEY, JSON.stringify(sprintConfig));
     };
 
+    // Get next status in workflow
+    const getNextStatus = (currentStatus) => {
+        const currentIndex = workflow.columns.findIndex(c => c.id === currentStatus);
+        const nextColumn = workflow.columns[currentIndex + 1];
+        return nextColumn?.id || currentStatus;
+    };
+
+    // Get first active status
+    const getFirstActiveStatus = () => {
+        const activeCol = workflow.columns.find(c => c.category === 'active');
+        return activeCol?.id || workflow.columns[0].id;
+    };
+
     const tabs = [
-        { id: 'board', label: 'Active Sprint Board', icon: KanbanSquare },
+        { id: 'board', label: `Active ${labels.sprint} Board`, icon: KanbanSquare },
         { id: 'backlog', label: 'Backlog Grooming', icon: Layers },
-        { id: 'management', label: 'Sprint Planning', icon: Calendar },
+        { id: 'management', label: labels.planning, icon: Calendar },
     ];
 
     return (
-        <div className="p-8 max-w-[1800px] mx-auto space-y-8 min-h-screen flex flex-col">
+        <div className="p-8 max-w-[1800px] mx-auto space-y-6 min-h-screen flex flex-col">
+            
+            {/* Workflow Selector */}
+            <div className="flex items-center justify-between">
+                <WorkflowSelector variant="pills" />
+                <div className="text-xs text-muted-foreground">
+                    {workflow.columns.length} workflow stages
+                </div>
+            </div>
             
             {/* Header */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 shrink-0">
                 <div>
                     <h1 className="text-3xl font-bold tracking-tight text-foreground flex items-center gap-3">
-                        <div className="p-2 rounded-lg bg-emerald-500/10 text-emerald-500">
-                            <Rocket size={24} />
+                        <div className={`p-2 rounded-lg ${colors.bg} ${colors.text}`}>
+                            <WorkflowIcon size={24} />
                         </div>
-                        Agile Sprint Planner
+                        {workflow.name} - {labels.planning}
                     </h1>
                     <p className="text-muted-foreground mt-1 font-medium ml-12">
-                        Plan sprints, groom the backlog, and track velocity.
+                        {workflowMode === 'agile' 
+                            ? 'Plan sprints, groom the backlog, and track velocity.'
+                            : workflowMode === 'ccaas'
+                            ? 'Manage ticket queues, prioritize, and track resolution.'
+                            : 'Plan changes, manage incidents, and track resolution.'}
                     </p>
                 </div>
                 <div className="flex items-center gap-3">
-                   <div className="flex items-center gap-2 px-3 py-1.5 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-300 rounded-full text-sm font-semibold border border-emerald-100 dark:border-emerald-800">
+                   <div className={`flex items-center gap-2 px-3 py-1.5 bg-${colors.accent}-50 dark:bg-${colors.accent}-900/20 text-${colors.accent}-700 dark:text-${colors.accent}-300 rounded-full text-sm font-semibold border border-${colors.accent}-100 dark:border-${colors.accent}-800`}>
                         <Timer size={14} />
                         <span>{sprintConfig.name}: {sprintConfig.daysRemaining} Days Remaining</span>
                    </div>
@@ -103,7 +198,7 @@ export default function SprintPage() {
                             className={`
                                 relative flex items-center gap-2 px-4 py-3 rounded-t-lg font-medium text-sm transition-all
                                 ${isActive 
-                                    ? 'text-emerald-600 dark:text-emerald-400 bg-emerald-50/50 dark:bg-emerald-900/10' 
+                                    ? `text-${colors.accent}-600 dark:text-${colors.accent}-400 bg-${colors.accent}-50/50 dark:bg-${colors.accent}-900/10` 
                                     : 'text-muted-foreground hover:text-foreground hover:bg-slate-50 dark:hover:bg-slate-800/50'
                                 }
                             `}
@@ -112,8 +207,8 @@ export default function SprintPage() {
                             {tab.label}
                             {isActive && (
                                 <motion.div
-                                    layoutId="activeTabIndicator"
-                                    className="absolute bottom-0 left-0 right-0 h-0.5 bg-emerald-500"
+                                    layoutId="sprintActiveTabIndicator"
+                                    className={`absolute bottom-0 left-0 right-0 h-0.5 bg-${colors.accent}-500`}
                                 />
                             )}
                         </button>
@@ -125,7 +220,7 @@ export default function SprintPage() {
             <div className="relative flex-1 min-h-0">
                 <AnimatePresence mode="wait">
                     <motion.div
-                        key={activeTab}
+                        key={`${activeTab}-${workflowMode}`}
                         initial={{ opacity: 0, scale: 0.99 }}
                         animate={{ opacity: 1, scale: 1 }}
                         exit={{ opacity: 0, scale: 0.99 }}
@@ -134,7 +229,7 @@ export default function SprintPage() {
                     >
                         {activeTab === 'board' && (
                             <div className="h-full space-y-6">
-                                {/* Sprint Stats - Using real task data */}
+                                {/* Stats - Workflow Aware */}
                                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                                     <Card variant="elevated" padding="md" className="flex items-center gap-4">
                                         <div className="w-10 h-10 rounded-lg bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center text-emerald-600">
@@ -159,41 +254,45 @@ export default function SprintPage() {
                                             <AlertCircle size={20} />
                                         </div>
                                         <div>
-                                            <p className="text-sm text-muted-foreground">Urgent</p>
+                                            <p className="text-sm text-muted-foreground">
+                                                {workflowMode === 'ccaas' ? 'Escalated' : workflowMode === 'itsm' ? 'Critical' : 'Urgent'}
+                                            </p>
                                             <p className="text-xl font-bold">{stats.blocked}</p>
                                         </div>
                                     </Card>
                                     <Card variant="elevated" padding="md" className="flex items-center gap-4">
-                                        <div className="w-10 h-10 rounded-lg bg-violet-100 dark:bg-violet-900/30 flex items-center justify-center text-violet-600">
+                                        <div className={`w-10 h-10 rounded-lg ${colors.bg} flex items-center justify-center ${colors.text}`}>
                                             <Layers size={20} />
                                         </div>
                                         <div>
-                                            <p className="text-sm text-muted-foreground">Total Tasks</p>
-                                            <p className="text-xl font-bold">{tasks.length}</p>
+                                            <p className="text-sm text-muted-foreground">Total {labels.items}</p>
+                                            <p className="text-xl font-bold">{stats.total}</p>
                                         </div>
                                     </Card>
                                 </div>
-                                {/* Agile Sprint Kanban Board - Using real tasks */}
+                                
+                                {/* Dynamic Workflow Board */}
                                 <Card variant="elevated" padding="lg" className="min-h-[400px] overflow-x-auto">
                                     <div className="flex justify-between items-center mb-4">
-                                        <h3 className="text-lg font-semibold">Sprint Board</h3>
+                                        <h3 className="text-lg font-semibold">{labels.sprint} Board</h3>
                                         <Button variant="primary" size="sm" onClick={() => setIsCreateTaskOpen(true)}>
                                             <Plus size={14} className="mr-1" />
-                                            Add Task
+                                            Add {labels.item}
                                         </Button>
                                     </div>
                                     <div className="flex gap-4 min-w-max pb-4">
-                                        {[
-                                            { id: 'todo', label: 'To Do', color: 'bg-violet-50 dark:bg-violet-900/20' },
-                                            { id: 'in-progress', label: 'In Progress', color: 'bg-blue-50 dark:bg-blue-900/20' },
-                                            { id: 'code-review', label: 'Code Review', color: 'bg-amber-50 dark:bg-amber-900/20' },
-                                            { id: 'testing', label: 'Testing', color: 'bg-orange-50 dark:bg-orange-900/20' },
-                                            { id: 'done', label: 'Done', color: 'bg-emerald-50 dark:bg-emerald-900/20' },
-                                        ].map((col) => (
-                                            <div key={col.id} className={`w-[240px] shrink-0 rounded-xl p-4 min-h-[300px] ${col.color}`}>
+                                        {activeColumns.map((col) => (
+                                            <div 
+                                                key={col.id} 
+                                                className={`w-[220px] shrink-0 rounded-xl p-4 min-h-[300px] ${col.color} ${col.darkColor}`}
+                                            >
                                                 <div className="flex justify-between items-center mb-3">
-                                                    <h4 className="font-semibold text-xs uppercase tracking-wider text-muted-foreground">{col.label}</h4>
-                                                    <Badge variant="secondary" className="text-xs">{tasksByStatus[col.id]?.length || 0}</Badge>
+                                                    <h4 className="font-semibold text-xs uppercase tracking-wider text-muted-foreground">
+                                                        {col.title}
+                                                    </h4>
+                                                    <Badge variant="secondary" className="text-xs">
+                                                        {tasksByStatus[col.id]?.length || 0}
+                                                    </Badge>
                                                 </div>
                                                 <div className="space-y-2">
                                                     {tasksByStatus[col.id]?.map((task) => (
@@ -201,27 +300,27 @@ export default function SprintPage() {
                                                             key={task.id} 
                                                             variant="hover" 
                                                             padding="sm" 
-                                                            className="cursor-pointer"
+                                                            className="cursor-pointer group"
                                                             onClick={() => {
-                                                                // Quick status change on click
-                                                                const nextStatus = {
-                                                                    'todo': 'in-progress',
-                                                                    'in-progress': 'code-review',
-                                                                    'code-review': 'testing',
-                                                                    'testing': 'done',
-                                                                    'done': 'done'
-                                                                };
-                                                                if (task.status !== 'done') {
-                                                                    updateTask(task.id, { status: nextStatus[task.status] });
+                                                                const nextStatus = getNextStatus(task.status);
+                                                                if (nextStatus !== task.status) {
+                                                                    updateTask(task.id, { status: nextStatus });
                                                                 }
                                                             }}
                                                         >
                                                             <p className="text-sm font-medium">{task.title}</p>
-                                                            <p className="text-xs text-muted-foreground mt-1 capitalize">{task.priority} priority</p>
+                                                            <div className="flex items-center justify-between mt-1">
+                                                                <p className="text-xs text-muted-foreground capitalize">{task.priority}</p>
+                                                                <span className="text-[10px] text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity">
+                                                                    Click to advance →
+                                                                </span>
+                                                            </div>
                                                         </Card>
                                                     ))}
-                                                    {tasksByStatus[col.id]?.length === 0 && (
-                                                        <p className="text-xs text-muted-foreground text-center py-4">No tasks</p>
+                                                    {(!tasksByStatus[col.id] || tasksByStatus[col.id].length === 0) && (
+                                                        <p className="text-xs text-muted-foreground text-center py-4">
+                                                            No {labels.items.toLowerCase()}
+                                                        </p>
                                                     )}
                                                 </div>
                                             </div>
@@ -235,22 +334,26 @@ export default function SprintPage() {
                             <Card variant="elevated" padding="lg" className="min-h-[500px]">
                                 <div className="flex justify-between items-center mb-4">
                                     <div>
-                                        <h3 className="text-lg font-semibold">Backlog Items</h3>
-                                        <p className="text-muted-foreground text-sm">Click to move tasks to In Progress.</p>
+                                        <h3 className="text-lg font-semibold">
+                                            {workflowMode === 'ccaas' ? 'Ticket Queue' : workflowMode === 'itsm' ? 'Incident Queue' : 'Backlog Items'}
+                                        </h3>
+                                        <p className="text-muted-foreground text-sm">
+                                            Click to move {labels.items.toLowerCase()} to active work.
+                                        </p>
                                     </div>
                                     <Button variant="primary" size="sm" onClick={() => setIsCreateTaskOpen(true)}>
                                         <Plus size={14} className="mr-1" />
-                                        Add to Backlog
+                                        Add {labels.item}
                                     </Button>
                                 </div>
                                 <div className="mt-6 space-y-3">
-                                    {tasks.filter(t => t.status === 'backlog' || t.status === 'todo').map((task) => (
+                                    {backlogItems.map((task) => (
                                         <Card 
                                             key={task.id} 
                                             variant="hover" 
                                             padding="md" 
                                             className="cursor-pointer flex justify-between items-center group"
-                                            onClick={() => updateTask(task.id, { status: 'in-progress' })}
+                                            onClick={() => updateTask(task.id, { status: getFirstActiveStatus() })}
                                         >
                                             <div>
                                                 <span className="font-medium">{task.title}</span>
@@ -259,7 +362,7 @@ export default function SprintPage() {
                                                 )}
                                             </div>
                                             <div className="flex items-center gap-2">
-                                                <Badge variant={task.priority === 'high' ? 'destructive' : 'secondary'} className="capitalize">
+                                                <Badge variant={task.priority === 'high' || task.priority === 'urgent' ? 'destructive' : 'secondary'} className="capitalize">
                                                     {task.priority}
                                                 </Badge>
                                                 <Button 
@@ -268,7 +371,7 @@ export default function SprintPage() {
                                                     className="opacity-0 group-hover:opacity-100"
                                                     onClick={(e) => {
                                                         e.stopPropagation();
-                                                        updateTask(task.id, { status: 'in-progress' });
+                                                        updateTask(task.id, { status: getFirstActiveStatus() });
                                                     }}
                                                 >
                                                     <Play size={14} className="mr-1" />
@@ -277,10 +380,10 @@ export default function SprintPage() {
                                             </div>
                                         </Card>
                                     ))}
-                                    {tasks.filter(t => t.status === 'backlog' || t.status === 'todo').length === 0 && (
+                                    {backlogItems.length === 0 && (
                                         <div className="text-center py-12 text-muted-foreground">
                                             <Layers size={32} className="mx-auto mb-2 opacity-50" />
-                                            <p>No items in backlog</p>
+                                            <p>No {labels.items.toLowerCase()} in queue</p>
                                         </div>
                                     )}
                                 </div>
@@ -291,8 +394,10 @@ export default function SprintPage() {
                             <Card variant="elevated" padding="lg" className="min-h-[500px]">
                                 <div className="flex justify-between items-center mb-4">
                                     <div>
-                                        <h3 className="text-lg font-semibold">Sprint Planning</h3>
-                                        <p className="text-muted-foreground text-sm">Configure sprint duration, capacity, and goals.</p>
+                                        <h3 className="text-lg font-semibold">{labels.planning}</h3>
+                                        <p className="text-muted-foreground text-sm">
+                                            Configure {labels.sprint.toLowerCase()} duration, capacity, and goals.
+                                        </p>
                                     </div>
                                     <Button variant="primary" onClick={handleSaveSprintConfig}>
                                         Save Configuration
@@ -301,7 +406,7 @@ export default function SprintPage() {
                                 <div className="mt-6 grid grid-cols-2 gap-6">
                                     <div className="space-y-4">
                                         <label className="block">
-                                            <span className="text-sm font-medium">Sprint Name</span>
+                                            <span className="text-sm font-medium">{labels.sprint} Name</span>
                                             <input 
                                                 type="text" 
                                                 value={sprintConfig.name}
@@ -339,7 +444,7 @@ export default function SprintPage() {
                                             />
                                         </label>
                                         <label className="block">
-                                            <span className="text-sm font-medium">Sprint Goal</span>
+                                            <span className="text-sm font-medium">{labels.sprint} Goal</span>
                                             <textarea 
                                                 value={sprintConfig.goal}
                                                 onChange={(e) => setSprintConfig({...sprintConfig, goal: e.target.value})}
@@ -350,10 +455,10 @@ export default function SprintPage() {
                                     </div>
                                 </div>
                                 <div className="mt-6 p-4 bg-muted/50 rounded-xl">
-                                    <h4 className="font-medium mb-2">Sprint Summary</h4>
+                                    <h4 className="font-medium mb-2">{labels.sprint} Summary</h4>
                                     <div className="grid grid-cols-4 gap-4 text-sm">
                                         <div>
-                                            <p className="text-muted-foreground">Total Tasks</p>
+                                            <p className="text-muted-foreground">Total {labels.items}</p>
                                             <p className="font-bold text-lg">{tasks.length}</p>
                                         </div>
                                         <div>
@@ -377,7 +482,7 @@ export default function SprintPage() {
             </div>
             
              <div className="text-xs text-slate-400 mt-4 border-t border-border pt-4 flex justify-between shrink-0">
-                 <span>Flux Agile Module v1.5</span>
+                 <span>Flux {workflow.name} Module v1.5</span>
                  <span>Dec 07, 2025</span>
             </div>
             

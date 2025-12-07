@@ -28,7 +28,10 @@ import {
     Plug,
     FileBox,
     Headphones,
-    Server
+    Server,
+    MessageSquare,
+    PenLine,
+    MessageCircle
 } from 'lucide-react';
 import { SettingsModal } from '@/features/settings/SettingsModal';
 import { CreateTaskModal } from '@/features/tasks/CreateTaskModal';
@@ -61,6 +64,9 @@ const FluxSidebar: React.FC = () => {
         { icon: Plug, label: 'Integrations', path: '/app/integrations' },
         { icon: FileUp, label: 'Import', path: '/app/import' },
         { icon: Palette, label: 'Design System', path: '/app/design' },
+        { icon: MessageSquare, label: 'AI Chat', path: '/app/ai' },
+        { icon: PenLine, label: 'Editor', path: '/app/editor' },
+        { icon: MessageCircle, label: 'Comments', path: '/app/comments' },
     ];
 
     const sidebarVariants = {

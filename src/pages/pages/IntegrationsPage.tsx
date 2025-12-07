@@ -1,9 +1,10 @@
 // @ts-nocheck
-import React, { useState } from 'react';
-import { Button } from '@/components/ui/button';
+import React, { useState, useEffect } from 'react';
+import { Button, Modal, Card } from '@/components/ui';
 import { Badge } from '@/components/ui/badge';
-import { Github, Slack, Figma, Trello, Mail, Globe, Database, Server } from 'lucide-react';
+import { Github, Slack, Figma, Trello, Mail, Globe, Database, Server, X, Check, ExternalLink, Plug } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useFluxStore } from '@/lib/store';
 
 interface Integration {
     id: string;
@@ -82,13 +83,68 @@ const INTEGRATIONS: Integration[] = [
 ];
 
 export default function IntegrationsPage() {
-    // Local state for connections just for UI demo
+    const { integrations: storeIntegrations, connectIntegration, disconnectIntegration, fetchIntegrations } = useFluxStore();
+    
+    // Local state merged with store integrations
     const [integrations, setIntegrations] = useState(INTEGRATIONS);
+    const [selectedIntegration, setSelectedIntegration] = useState<Integration | null>(null);
+    const [isConfigModalOpen, setIsConfigModalOpen] = useState(false);
+    const [apiKey, setApiKey] = useState('');
+    const [isLoading, setIsLoading] = useState(false);
 
-    const toggleConnection = (id: string) => {
+    // Sync with store integrations on mount
+    useEffect(() => {
+        fetchIntegrations();
+    }, []);
+
+    // Merge store state with local definitions
+    useEffect(() => {
+        if (storeIntegrations.length > 0) {
+            setIntegrations(prev => prev.map(item => {
+                const storeItem = storeIntegrations.find(s => s.type === item.id);
+                return storeItem ? { ...item, connected: storeItem.isConnected } : item;
+            }));
+        }
+    }, [storeIntegrations]);
+
+    const handleConnect = async () => {
+        if (!selectedIntegration) return;
+        
+        setIsLoading(true);
+        try {
+            await connectIntegration(selectedIntegration.id as any, { apiKey });
+            setIntegrations(prev => prev.map(item =>
+                item.id === selectedIntegration.id ? { ...item, connected: true } : item
+            ));
+            setIsConfigModalOpen(false);
+            setApiKey('');
+        } catch (error) {
+            console.error('Failed to connect:', error);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const handleDisconnect = async (integration: Integration) => {
+        setIsLoading(true);
+        try {
+            const storeItem = storeIntegrations.find(s => s.type === integration.id);
+            if (storeItem) {
+                await disconnectIntegration(storeItem.id);
+            }
         setIntegrations(prev => prev.map(item =>
-            item.id === id ? { ...item, connected: !item.connected } : item
+                item.id === integration.id ? { ...item, connected: false } : item
         ));
+        } catch (error) {
+            console.error('Failed to disconnect:', error);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const openConfigModal = (integration: Integration) => {
+        setSelectedIntegration(integration);
+        setIsConfigModalOpen(true);
     };
 
     return (
@@ -137,20 +193,110 @@ export default function IntegrationsPage() {
                             <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">
                                 {item.category}
                             </span>
+                            {item.connected ? (
+                                <div className="flex gap-2">
+                                    <Button
+                                        size="sm"
+                                        variant="ghost"
+                                        onClick={() => openConfigModal(item)}
+                                    >
+                                        Configure
+                                    </Button>
+                                    <Button
+                                        size="sm"
+                                        variant="destructive"
+                                        onClick={() => handleDisconnect(item)}
+                                        disabled={isLoading}
+                                    >
+                                        Disconnect
+                                    </Button>
+                                </div>
+                            ) : (
                             <Button
                                 size="sm"
-                                variant={item.connected ? "outline" : "primary"}
-                                onClick={() => {
-                                    toggleConnection(item.id);
-                                    alert(item.connected ? `Disconnecting ${item.name}...` : `Connecting ${item.name}...`);
-                                }}
+                                    variant="primary"
+                                    onClick={() => openConfigModal(item)}
                             >
-                                {item.connected ? "Configure" : "Connect"}
+                                    Connect
                             </Button>
+                            )}
                         </div>
                     </div>
                 ))}
             </div>
+
+            {/* Integration Config Modal */}
+            <Modal 
+                isOpen={isConfigModalOpen} 
+                onClose={() => { setIsConfigModalOpen(false); setApiKey(''); }}
+                title={`${selectedIntegration?.connected ? 'Configure' : 'Connect'} ${selectedIntegration?.name}`}
+            >
+                <div className="space-y-4">
+                    {selectedIntegration && (
+                        <>
+                            <div className="flex items-center gap-3 p-4 bg-muted/50 rounded-xl">
+                                <selectedIntegration.icon className="w-8 h-8 text-card-foreground" />
+                                <div>
+                                    <h3 className="font-semibold text-foreground">{selectedIntegration.name}</h3>
+                                    <p className="text-sm text-muted-foreground">{selectedIntegration.description}</p>
+                                </div>
+                            </div>
+
+                            {!selectedIntegration.connected && (
+                                <div className="space-y-2">
+                                    <label className="text-sm font-medium text-card-foreground">API Key / Access Token</label>
+                                    <input
+                                        type="password"
+                                        value={apiKey}
+                                        onChange={(e) => setApiKey(e.target.value)}
+                                        placeholder={`Enter your ${selectedIntegration.name} API key`}
+                                        className="flex h-10 w-full rounded-md border border-border bg-transparent px-3 py-2 text-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-500 dark:text-slate-50"
+                                    />
+                                    <p className="text-xs text-muted-foreground">
+                                        Your API key will be securely stored and used only for {selectedIntegration.name} integration.
+                                    </p>
+                                </div>
+                            )}
+
+                            {selectedIntegration.connected && (
+                                <div className="space-y-3">
+                                    <div className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400">
+                                        <Check size={16} />
+                                        <span className="text-sm font-medium">Connected successfully</span>
+                                    </div>
+                                    <p className="text-sm text-muted-foreground">
+                                        You can manage sync settings and permissions for this integration.
+                                    </p>
+                                </div>
+                            )}
+
+                            <div className="flex justify-end gap-3 pt-4">
+                                <Button 
+                                    type="button" 
+                                    variant="ghost" 
+                                    onClick={() => { setIsConfigModalOpen(false); setApiKey(''); }}
+                                >
+                                    Cancel
+                                </Button>
+                                {!selectedIntegration.connected ? (
+                                    <Button 
+                                        onClick={handleConnect}
+                                        disabled={isLoading || !apiKey.trim()}
+                                    >
+                                        {isLoading ? 'Connecting...' : 'Connect'}
+                                    </Button>
+                                ) : (
+                                    <Button 
+                                        onClick={() => setIsConfigModalOpen(false)}
+                                    >
+                                        Done
+                                    </Button>
+                                )}
+                            </div>
+                        </>
+                    )}
+                </div>
+            </Modal>
         </div>
     );
 }

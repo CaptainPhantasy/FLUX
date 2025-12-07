@@ -62,19 +62,19 @@ export const validateEnv = () => {
   }
 
   if (errors.length > 0) {
-    console.warn('⚠️ Environment validation warnings:', errors);
+    console.warn('[ENV] Validation warnings:', errors);
     return false;
   }
 
-  console.log('✅ Environment validation successful');
+  console.log('[ENV] Validation successful');
   if (envConfig.SUPABASE.URL) {
-    console.log(`✅ Supabase configured: ${envConfig.SUPABASE.URL.substring(0, 30)}...`);
+    console.log(`[ENV] Supabase configured: ${envConfig.SUPABASE.URL.substring(0, 30)}...`);
   }
-  console.log(`✅ Environment: ${envConfig.APP.ENVIRONMENT}`);
+  console.log(`[ENV] Environment: ${envConfig.APP.ENVIRONMENT}`);
 
   // Check for proxy configuration
   if (envConfig.PROXY.USE_PROXY) {
-    console.log(`✅ Proxy server enabled: ${envConfig.PROXY.URL}`);
+    console.log(`[ENV] Proxy server enabled: ${envConfig.PROXY.URL}`);
   }
 
   return true;

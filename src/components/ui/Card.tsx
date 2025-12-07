@@ -13,45 +13,51 @@ export interface CardProps extends HTMLAttributes<HTMLDivElement> {
 }
 
 const cardVariants = {
-    // Default - THICK floating shadow (50% more than before)
-    default: 'bg-card text-card-foreground border border-border/40 shadow-[0_12px_35px_-8px_rgba(0,0,0,0.18),0_6px_15px_-5px_rgba(0,0,0,0.12)] dark:shadow-[0_12px_35px_-8px_rgba(0,0,0,0.55),0_6px_15px_-5px_rgba(0,0,0,0.35)]',
+    // Default - Floating shadow with smooth transitions
+    default: `bg-card text-card-foreground border border-border/40 
+              shadow-[0_12px_35px_-8px_rgba(0,0,0,0.18),0_6px_15px_-5px_rgba(0,0,0,0.12)] 
+              dark:shadow-[0_12px_35px_-8px_rgba(0,0,0,0.55),0_6px_15px_-5px_rgba(0,0,0,0.35)]
+              transition-all duration-300 ease-[cubic-bezier(0.25,0.46,0.45,0.94)]`,
     
     // Flat - no elevation
-    flat: 'bg-muted/50 text-card-foreground border-0',
+    flat: 'bg-muted/50 text-card-foreground border-0 transition-colors duration-200',
     
     // Outline - border only
-    outline: 'bg-transparent text-card-foreground border border-border',
+    outline: 'bg-transparent text-card-foreground border border-border transition-all duration-200',
     
     // Ghost - minimal
-    ghost: 'bg-transparent text-card-foreground border-0',
+    ghost: 'bg-transparent text-card-foreground border-0 transition-all duration-200',
     
-    // Hover - THICK shadow at rest, lifts on hover, DARKER shadow on press
+    // Hover - Buttery smooth lift and shadow transitions
     hover: `bg-card text-card-foreground border border-border/40 
-            shadow-[0_12px_35px_-8px_rgba(0,0,0,0.18),0_6px_15px_-5px_rgba(0,0,0,0.12)] 
-            dark:shadow-[0_12px_35px_-8px_rgba(0,0,0,0.55),0_6px_15px_-5px_rgba(0,0,0,0.35)]
-            hover:shadow-[0_8px_25px_-6px_rgba(0,0,0,0.12),0_4px_10px_-4px_rgba(0,0,0,0.08)] 
-            dark:hover:shadow-[0_8px_25px_-6px_rgba(0,0,0,0.4),0_4px_10px_-4px_rgba(0,0,0,0.25)]
-            hover:border-violet-200/50 dark:hover:border-violet-600/50
-            hover:-translate-y-1.5
-            active:shadow-[0_16px_50px_-5px_rgba(0,0,0,0.25),0_10px_25px_-5px_rgba(0,0,0,0.2)] 
-            dark:active:shadow-[0_16px_50px_-5px_rgba(0,0,0,0.65),0_10px_25px_-5px_rgba(0,0,0,0.45)]
-            active:translate-y-0.5
-            transition-all duration-200 ease-out`,
+            shadow-[0_8px_30px_-8px_rgba(0,0,0,0.15),0_4px_12px_-4px_rgba(0,0,0,0.1)] 
+            dark:shadow-[0_8px_30px_-8px_rgba(0,0,0,0.45),0_4px_12px_-4px_rgba(0,0,0,0.3)]
+            hover:shadow-[0_16px_40px_-8px_rgba(0,0,0,0.18),0_8px_20px_-5px_rgba(0,0,0,0.12)] 
+            dark:hover:shadow-[0_16px_40px_-8px_rgba(0,0,0,0.5),0_8px_20px_-5px_rgba(0,0,0,0.35)]
+            hover:border-orange-200/70 dark:hover:border-orange-500/50
+            hover:-translate-y-1
+            active:shadow-[0_4px_15px_-4px_rgba(0,0,0,0.12),0_2px_8px_-3px_rgba(0,0,0,0.08)] 
+            dark:active:shadow-[0_4px_15px_-4px_rgba(0,0,0,0.4),0_2px_8px_-3px_rgba(0,0,0,0.25)]
+            active:translate-y-0
+            transition-all duration-300 ease-[cubic-bezier(0.25,0.46,0.45,0.94)]`,
     
-    // Gradient - accent card with glow
-    gradient: 'bg-gradient-to-br from-violet-500 to-fuchsia-500 text-white border-0 shadow-[0_14px_45px_-10px_rgba(139,92,246,0.6)]',
+    // Gradient - accent card with smooth glow
+    gradient: `bg-gradient-to-br from-[#E67D22] to-[#C15F3C] text-white border-0 
+               shadow-[0_14px_45px_-10px_rgba(230,125,34,0.45)]
+               hover:shadow-[0_20px_50px_-10px_rgba(230,125,34,0.6)]
+               transition-all duration-300 ease-[cubic-bezier(0.25,0.46,0.45,0.94)]`,
     
-    // Elevated - MAXIMUM depth with thick shadows
+    // Elevated - Maximum depth with buttery smooth shadows
     elevated: `bg-card text-card-foreground border border-border/30
-               shadow-[0_14px_45px_-10px_rgba(0,0,0,0.22),0_8px_20px_-6px_rgba(0,0,0,0.15)] 
-               dark:shadow-[0_14px_45px_-10px_rgba(0,0,0,0.6),0_8px_20px_-6px_rgba(0,0,0,0.4)]
-               hover:shadow-[0_10px_30px_-8px_rgba(0,0,0,0.15),0_5px_12px_-5px_rgba(0,0,0,0.1)]
-               dark:hover:shadow-[0_10px_30px_-8px_rgba(0,0,0,0.45),0_5px_12px_-5px_rgba(0,0,0,0.3)]
-               hover:-translate-y-1.5
-               active:shadow-[0_18px_55px_-8px_rgba(0,0,0,0.28),0_12px_30px_-6px_rgba(0,0,0,0.22)] 
-               dark:active:shadow-[0_18px_55px_-8px_rgba(0,0,0,0.7),0_12px_30px_-6px_rgba(0,0,0,0.5)]
-               active:translate-y-0.5
-               transition-all duration-200 ease-out`,
+               shadow-[0_10px_40px_-10px_rgba(0,0,0,0.18),0_6px_16px_-5px_rgba(0,0,0,0.12)] 
+               dark:shadow-[0_10px_40px_-10px_rgba(0,0,0,0.5),0_6px_16px_-5px_rgba(0,0,0,0.35)]
+               hover:shadow-[0_16px_50px_-12px_rgba(0,0,0,0.2),0_10px_24px_-6px_rgba(0,0,0,0.14)]
+               dark:hover:shadow-[0_16px_50px_-12px_rgba(0,0,0,0.55),0_10px_24px_-6px_rgba(0,0,0,0.4)]
+               hover:-translate-y-1
+               active:shadow-[0_6px_20px_-6px_rgba(0,0,0,0.12),0_3px_10px_-3px_rgba(0,0,0,0.08)] 
+               dark:active:shadow-[0_6px_20px_-6px_rgba(0,0,0,0.4),0_3px_10px_-3px_rgba(0,0,0,0.25)]
+               active:translate-y-0
+               transition-all duration-300 ease-[cubic-bezier(0.25,0.46,0.45,0.94)]`,
 };
 
 const paddingStyles = {

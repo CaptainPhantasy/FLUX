@@ -34,12 +34,14 @@ const saveDocuments = (docs: Document[]) => {
 };
 
 const getFileType = (filename: string): Document['type'] => {
-    const ext = filename.split('.').pop()?.toLowerCase();
-    if (['md', 'markdown'].includes(ext || '')) return 'markdown';
-    if (['js', 'ts', 'tsx', 'jsx', 'py', 'json', 'html', 'css'].includes(ext || '')) return 'code';
-    if (['fig', 'sketch', 'psd', 'ai', 'xd'].includes(ext || '')) return 'design';
-    if (['pdf'].includes(ext || '')) return 'pdf';
-    if (['txt', 'doc', 'docx'].includes(ext || '')) return 'text';
+    const ext = (filename.split('.').pop() || '').toLowerCase();
+    if (['md', 'markdown'].includes(ext)) return 'markdown';
+    if (['js', 'ts', 'tsx', 'jsx', 'py', 'json', 'html', 'css'].includes(ext)) return 'code';
+    if (['fig', 'sketch', 'psd', 'ai', 'xd'].includes(ext)) return 'design';
+    if (['pdf'].includes(ext)) return 'pdf';
+    if (['txt', 'doc', 'docx', 'rtf'].includes(ext)) return 'text';
+    if (['csv', 'xls', 'xlsx'].includes(ext)) return 'text';
+    if (['tif', 'tiff', 'bmp', 'gif', 'jpg', 'jpeg', 'png', 'webp', 'svg'].includes(ext)) return 'design';
     return 'other';
 };
 
@@ -174,7 +176,7 @@ export default function DocumentsPage() {
                             placeholder="Search docs..."
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
-                            className="pl-9 pr-4 py-2 bg-background border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 w-64 text-foreground placeholder-muted-foreground"
+                            className="pl-9 pr-4 py-2 bg-background border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 w-64 text-foreground placeholder-muted-foreground shadow-sm"
                         />
                     </div>
                     <Button onClick={() => fileInputRef.current?.click()}>
@@ -336,10 +338,14 @@ export default function DocumentsPage() {
                                 </Button>
                             </div>
                         </div>
-                        {selectedDoc.content ? (
-                            <pre className="p-4 bg-muted rounded-lg text-sm overflow-auto max-h-[400px] text-foreground">
+                        {selectedDoc.content && selectedDoc.content.length < 200000 ? (
+                            <pre className="p-4 bg-muted rounded-lg text-sm overflow-auto max-h-[400px] text-foreground whitespace-pre-wrap break-words">
                                 {selectedDoc.content}
                             </pre>
+                        ) : selectedDoc.type === 'design' || selectedDoc.type === 'image' ? (
+                            <div className="p-2 bg-muted rounded-lg text-center">
+                                <img src={selectedDoc.url} alt={selectedDoc.title} className="max-h-[400px] mx-auto object-contain" />
+                            </div>
                         ) : (
                             <div className="p-8 bg-muted rounded-lg text-center text-muted-foreground">
                                 Preview not available for this file type

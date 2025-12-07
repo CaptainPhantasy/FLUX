@@ -266,23 +266,23 @@ function processMockCommand(input: string): Promise<{
             resolve({
                 response: `Here's what I can do:
 
-📝 **Task Management**
-• "Create task: [title]" - Add a new task
-• "List tasks" - Show all active tasks  
-• "Mark [task] as done" - Complete a task
-• "Archive completed tasks" - Clean up done items
+**Task Management**
+- "Create task: [title]" - Add a new task
+- "List tasks" - Show all active tasks  
+- "Mark [task] as done" - Complete a task
+- "Archive completed tasks" - Clean up done items
 
-📬 **Notifications**
-• "Clear notifications" - Mark all as read
-• "How many unread?" - Check notification count
+**Notifications**
+- "Clear notifications" - Mark all as read
+- "How many unread?" - Check notification count
 
-🎨 **UI Control**
-• "Switch to dark/light mode" - Change theme
-• "Toggle sidebar" - Collapse/expand navigation
+**UI Control**
+- "Switch to dark/light mode" - Change theme
+- "Toggle sidebar" - Collapse/expand navigation
 
-📊 **Insights**
-• "Project summary" - Get an overview
-• "What's my workload?" - See task breakdown
+**Insights**
+- "Project summary" - Get an overview
+- "What's my workload?" - See task breakdown
 
 Just ask naturally - I'll figure out what you need!`,
             });

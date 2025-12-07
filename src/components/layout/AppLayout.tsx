@@ -5,6 +5,7 @@ import FluxCommandTerminal from '../FluxCommandTerminal';
 import { Message } from '../../types';
 import { useFluxStore } from '@/lib/store';
 import { chatWithAssistant } from '@/services/geminiService';
+import BackgroundGradientAnimation from '@/components/ui/BackgroundGradientAnimation';
 
 export const AppLayout: React.FC = () => {
   // Initialize the store on mount
@@ -87,17 +88,19 @@ export const AppLayout: React.FC = () => {
   }, [tasks, projects]);
 
   return (
-    <div className="flex h-screen w-screen bg-slate-50 dark:bg-slate-950 overflow-hidden text-slate-900 dark:text-slate-100">
-      
-      {/* 1. Global Navigation */}
-      <FluxSidebar />
+    <BackgroundGradientAnimation
+      containerClassName="h-screen w-screen"
+      className="pointer-events-none"
+      interactive
+    >
+      {console.info('[AppLayout] AI Studio frame active. Path:', window.location.pathname)}
 
-      {/* 2. Page Content */}
-      <main className="flex-1 overflow-auto relative z-0 scroll-smooth">
-        <div className="p-4 md:p-6 lg:p-8 mx-auto max-w-[1600px] animate-fade-in">
-           <Outlet />
-        </div>
-      </main>
+      <div className="w-full h-full flex items-stretch text-slate-900 dark:text-slate-100">
+        <FluxSidebar />
+        <main className="flex-1 overflow-auto relative z-0 scroll-smooth">
+          <Outlet />
+        </main>
+      </div>
 
       {/* 3. Global Overlay - Command Terminal */}
       <FluxCommandTerminal 
@@ -107,6 +110,6 @@ export const AppLayout: React.FC = () => {
         history={terminalHistory}
         isThinking={isThinking}
       />
-    </div>
+    </BackgroundGradientAnimation>
   );
 };

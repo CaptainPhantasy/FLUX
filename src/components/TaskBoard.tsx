@@ -5,13 +5,13 @@ const INITIAL_TASKS: Task[] = [
   { id: '1', title: 'Refine Design System', description: 'Standardize the violet color palette across all modules.', status: 'todo', priority: 'high', tags: ['Design', 'UI'] },
   { id: '2', title: 'Gemini AI Integration', description: 'Connect text generation API to task creator.', status: 'in-progress', priority: 'high', tags: ['Dev', 'AI'] },
   { id: '3', title: 'User Testing', description: 'Conduct sessions with 5 beta users.', status: 'done', priority: 'medium', tags: ['Research'] },
-  { id: '4', title: 'Animation Polish', description: 'Add micro-interactions to buttons.', status: 'review', priority: 'low', tags: ['Frontend'] },
+  { id: '4', title: 'Animation Polish', description: 'Add micro-interactions to buttons.', status: 'code-review', priority: 'low', tags: ['Frontend'] },
 ];
 
 const COLUMNS: Column[] = [
   { id: 'col-1', title: 'To Do', status: 'todo' },
   { id: 'col-2', title: 'In Progress', status: 'in-progress' },
-  { id: 'col-3', title: 'Review', status: 'review' },
+  { id: 'col-3', title: 'Code Review', status: 'code-review' },
   { id: 'col-4', title: 'Done', status: 'done' },
 ];
 

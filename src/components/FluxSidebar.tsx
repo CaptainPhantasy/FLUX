@@ -1,7 +1,10 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { NavLink } from 'react-router-dom';
+import { NavLink, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTheme } from '../providers/ThemeProvider';
+import { useFluxStore } from '@/lib/store';
+import { CreateTaskModal } from '@/features/tasks/CreateTaskModal';
+import { SettingsModal } from '@/features/settings/SettingsModal';
 import {
   LayoutDashboard,
   CheckCircle2,
@@ -25,12 +28,22 @@ import {
 } from 'lucide-react';
 
 const FluxSidebar: React.FC = () => {
+  const navigate = useNavigate();
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isCreateTaskOpen, setIsCreateTaskOpen] = useState(false);
+  const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
   const settingsRef = useRef<HTMLDivElement>(null);
   const { theme, setTheme } = useTheme();
+  const { logout, user } = useFluxStore();
 
   const toggleSidebar = () => setIsCollapsed(!isCollapsed);
+  
+  const handleSignOut = () => {
+    logout();
+    setIsSettingsOpen(false);
+    navigate('/login');
+  };
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -213,7 +226,9 @@ const FluxSidebar: React.FC = () => {
       {/* Footer / User Section */}
       <div className="p-3 mt-auto">
          {/* Add New Button (Only visible when Expanded usually, or icon when collapsed) */}
-         <button className={`
+         <button 
+            onClick={() => setIsCreateTaskOpen(true)}
+            className={`
             w-full flex items-center justify-center gap-2 p-2.5 mb-4 rounded-xl 
             bg-slate-900 dark:bg-white text-white dark:text-slate-900 
             hover:bg-slate-800 dark:hover:bg-slate-100 transition-colors shadow-lg shadow-slate-900/20
@@ -250,8 +265,8 @@ const FluxSidebar: React.FC = () => {
               exit={{ opacity: 0, width: 0 }}
               className="flex-1 overflow-hidden"
             >
-              <h4 className="text-sm font-semibold text-slate-800 dark:text-slate-200 truncate">Alex Morgan</h4>
-              <p className="text-xs text-slate-500 dark:text-slate-400 truncate">alex@flux.io</p>
+              <h4 className="text-sm font-semibold text-slate-800 dark:text-slate-200 truncate">{user?.name || 'Guest User'}</h4>
+              <p className="text-xs text-slate-500 dark:text-slate-400 truncate">{user?.email || 'Not logged in'}</p>
             </motion.div>
           )}
 
@@ -301,11 +316,20 @@ const FluxSidebar: React.FC = () => {
                       </div>
 
                       <div className="p-2 space-y-1">
-                        <button className="w-full flex items-center gap-2 px-3 py-2 text-sm text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg transition-colors">
+                        <button 
+                            onClick={() => {
+                                setIsSettingsOpen(false);
+                                setIsSettingsModalOpen(true);
+                            }}
+                            className="w-full flex items-center gap-2 px-3 py-2 text-sm text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg transition-colors"
+                        >
                             <User size={16} />
                             Profile Settings
                         </button>
-                        <button className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/10 rounded-lg transition-colors">
+                        <button 
+                            onClick={handleSignOut}
+                            className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/10 rounded-lg transition-colors"
+                        >
                             <LogOut size={16} />
                             Sign Out
                         </button>
@@ -317,6 +341,10 @@ const FluxSidebar: React.FC = () => {
           )}
         </div>
       </div>
+      
+      {/* Modals */}
+      <CreateTaskModal isOpen={isCreateTaskOpen} onClose={() => setIsCreateTaskOpen(false)} />
+      <SettingsModal isOpen={isSettingsModalOpen} onClose={() => setIsSettingsModalOpen(false)} />
     </motion.aside>
   );
 };

@@ -1,52 +1,86 @@
 // @ts-nocheck
-import { useState } from 'react';
+// =====================================
+// FLUX - Create Task Modal
+// Dynamic workflow support: Agile, CCaaS, ITSM
+// =====================================
+
+import { useState, useEffect, useMemo } from 'react';
 import { useFluxStore } from '@/lib/store';
 import { Modal, Button } from '@/components/ui';
+import { getWorkflow, getActiveColumns } from '@/lib/workflows';
+import type { TaskPriority } from '@/types';
 
-export function CreateTaskModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
-    const { createTask } = useFluxStore();
+interface CreateTaskModalProps {
+    isOpen: boolean;
+    onClose: () => void;
+    defaultStatus?: string;
+}
+
+export function CreateTaskModal({ isOpen, onClose, defaultStatus }: CreateTaskModalProps) {
+    const { createTask, workflowMode } = useFluxStore();
+    
+    // Get workflow-aware statuses
+    const workflow = useMemo(() => getWorkflow(workflowMode), [workflowMode]);
+    const availableStatuses = useMemo(() => getActiveColumns(workflowMode), [workflowMode]);
+    const priorities = useMemo(() => workflow.priorities, [workflow]);
+    
     const [title, setTitle] = useState('');
     const [description, setDescription] = useState('');
-    const [priority, setPriority] = useState<'low' | 'medium' | 'high'>('medium');
+    const [priority, setPriority] = useState<TaskPriority>('medium');
+    const [status, setStatus] = useState(defaultStatus || availableStatuses[0]?.id || 'backlog');
     const [isLoading, setIsLoading] = useState(false);
+
+    // Update status when defaultStatus or workflow changes
+    useEffect(() => {
+        if (defaultStatus) {
+            setStatus(defaultStatus);
+        } else if (availableStatuses.length > 0) {
+            setStatus(availableStatuses[0].id);
+        }
+    }, [defaultStatus, availableStatuses]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        console.log('[CreateTaskModal] handleSubmit called');
-        console.log('[CreateTaskModal] Title:', title);
 
         if (!title.trim()) {
-            console.log('[CreateTaskModal] Title is empty, returning');
             return;
         }
 
-        console.log('[CreateTaskModal] Calling createTask...');
         setIsLoading(true);
-        const result = await createTask({
+        await createTask({
             title,
             description,
             priority,
-            status: 'todo',
+            status,
             order: 0,
         });
-        console.log('[CreateTaskModal] createTask result:', result);
         setIsLoading(false);
         onClose();
         setTitle('');
         setDescription('');
         setPriority('medium');
+        setStatus(defaultStatus || availableStatuses[0]?.id || 'backlog');
+    };
+
+    // Get workflow-specific labels
+    const getItemLabel = () => {
+        switch (workflowMode) {
+            case 'ccaas': return 'Ticket';
+            case 'itsm': return 'Incident';
+            default: return 'Task';
+        }
     };
 
     return (
-        <Modal isOpen={isOpen} onClose={onClose} title="Create New Task">
+        <Modal isOpen={isOpen} onClose={onClose} title={`Create New ${getItemLabel()}`}>
             <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="space-y-2">
-                    <label className="text-sm font-medium text-card-foreground">Task Title</label>
+                    <label className="text-sm font-medium text-card-foreground">{getItemLabel()} Title</label>
                     <input
                         type="text"
                         value={title}
                         onChange={(e) => setTitle(e.target.value)}
-                        placeholder="What needs to be done?"
+                        placeholder={workflowMode === 'ccaas' ? 'Customer inquiry about...' : workflowMode === 'itsm' ? 'Describe the incident...' : 'What needs to be done?'}
                         className="flex h-10 w-full rounded-md border border-border bg-transparent px-3 py-2 text-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-500 disabled:cursor-not-allowed disabled:opacity-50 dark:text-slate-50"
                         autoFocus
                     />
@@ -63,19 +97,38 @@ export function CreateTaskModal({ isOpen, onClose }: { isOpen: boolean; onClose:
                 </div>
 
                 <div className="space-y-2">
-                    <label className="text-sm font-medium text-card-foreground">Priority</label>
-                    <div className="flex gap-2">
-                        {(['low', 'medium', 'high'] as const).map((p) => (
+                    <label className="text-sm font-medium text-card-foreground">Status</label>
+                    <div className="flex flex-wrap gap-2">
+                        {availableStatuses.slice(0, 4).map((s) => (
                             <button
-                                key={p}
+                                key={s.id}
                                 type="button"
-                                onClick={() => setPriority(p)}
-                                className={`px-3 py-1.5 rounded-lg text-sm font-medium capitalize transition-colors ${priority === p
-                                    ? 'bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-300 ring-2 ring-violet-500/20'
+                                onClick={() => setStatus(s.id)}
+                                className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${status === s.id
+                                    ? `${s.color} ${s.darkColor} ring-2 ring-violet-500/20`
                                     : 'bg-slate-50 text-slate-600 dark:bg-slate-800 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700'
                                     }`}
                             >
-                                {p}
+                                {s.title}
+                            </button>
+                        ))}
+                    </div>
+                </div>
+
+                <div className="space-y-2">
+                    <label className="text-sm font-medium text-card-foreground">Priority</label>
+                    <div className="flex flex-wrap gap-2">
+                        {priorities.map((p) => (
+                            <button
+                                key={p.id}
+                                type="button"
+                                onClick={() => setPriority(p.id as TaskPriority)}
+                                className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${priority === p.id
+                                    ? `${p.color} ring-2 ring-violet-500/20`
+                                    : 'bg-slate-50 text-slate-600 dark:bg-slate-800 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700'
+                                    }`}
+                            >
+                                {p.label}
                             </button>
                         ))}
                     </div>
@@ -86,7 +139,7 @@ export function CreateTaskModal({ isOpen, onClose }: { isOpen: boolean; onClose:
                         Cancel
                     </Button>
                     <Button type="submit" disabled={isLoading || !title.trim()}>
-                        {isLoading ? 'Creating...' : 'Create Task'}
+                        {isLoading ? 'Creating...' : `Create ${getItemLabel()}`}
                     </Button>
                 </div>
             </form>

@@ -1,55 +1,75 @@
 // @ts-nocheck
 // =====================================
 // FLUX - Kanban Feature - FluxBoard
-// Refactored from fluxboard-kanban prototype
+// Dynamic workflow support: Agile, CCaaS, ITSM
 // =====================================
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import {
     DndContext,
     DragOverlay,
-    closestCorners,
+    closestCenter,
     KeyboardSensor,
     PointerSensor,
     useSensor,
     useSensors,
     DragStartEvent,
-    DragOverEvent,
     DragEndEvent,
     defaultDropAnimationSideEffects,
     DropAnimation,
+    MeasuringStrategy,
 } from '@dnd-kit/core';
+import { CSS } from '@dnd-kit/utilities';
 import { arrayMove, sortableKeyboardCoordinates } from '@dnd-kit/sortable';
 import { createPortal } from 'react-dom';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useFluxStore } from '@/lib/store';
-import type { Task, TaskStatus } from '@/types';
+import { getWorkflow, type WorkflowMode } from '@/lib/workflows';
+import type { Task } from '@/types';
 import { BoardColumn } from './board-column';
 import { FluxCard } from './flux-card';
 
+// Buttery smooth drop animation with spring physics
 const dropAnimationConfig: DropAnimation = {
+    duration: 350,
+    easing: 'cubic-bezier(0.25, 1, 0.5, 1)', // Smooth deceleration
     sideEffects: defaultDropAnimationSideEffects({
         styles: {
             active: {
-                opacity: '0.4',
+                opacity: '0.5',
             },
         },
     }),
-};
-
-// Column configuration mapped to our TaskStatus type
-const COLUMNS: { id: TaskStatus; title: string }[] = [
-    { id: 'todo', title: 'To Do' },
-    { id: 'in-progress', title: 'In Progress' },
-    { id: 'review', title: 'Review' },
-    { id: 'done', title: 'Done' },
+    keyframes({ transform }) {
+        return [
+            { transform: CSS.Transform.toString(transform.initial), opacity: 1 },
+            { 
+                transform: CSS.Transform.toString({
+                    ...transform.final,
+                    scaleX: 1.02,
+                    scaleY: 1.02,
+                }), 
+                opacity: 0.95 
+            },
+            { transform: CSS.Transform.toString(transform.final), opacity: 1 },
 ];
+    },
+};
 
 interface FluxBoardProps {
     tasks: Task[];
+    onEditTask?: (task: Task) => void;
 }
 
-export function FluxBoard({ tasks }: FluxBoardProps) {
-    const { moveTask } = useFluxStore();
+export function FluxBoard({ tasks, onEditTask }: FluxBoardProps) {
+    const { moveTask, workflowMode } = useFluxStore();
+    
+    // Get dynamic columns based on current workflow mode
+    const workflow = useMemo(() => getWorkflow(workflowMode), [workflowMode]);
+    const COLUMNS = useMemo(() => 
+        workflow.columns.map(col => ({ id: col.id, title: col.title })),
+        [workflow]
+    );
 
     // Local state for optimistic drag updates
     const [localTasks, setLocalTasks] = useState<Task[]>(tasks);
@@ -60,10 +80,14 @@ export function FluxBoard({ tasks }: FluxBoardProps) {
         setLocalTasks(tasks);
     }, [tasks]);
 
+    // Configure sensors for smooth, responsive drag activation
     const sensors = useSensors(
         useSensor(PointerSensor, {
             activationConstraint: {
-                distance: 5, // Prevent accidental drags
+                // Lower distance for quicker response, small delay for intentionality
+                distance: 8,
+                delay: 100,
+                tolerance: 5,
             },
         }),
         useSensor(KeyboardSensor, {
@@ -77,58 +101,8 @@ export function FluxBoard({ tasks }: FluxBoardProps) {
         setActiveId(event.active.id as string);
     };
 
-    const onDragOver = useCallback((event: DragOverEvent) => {
-        const { active, over } = event;
-        if (!over) return;
-
-        const activeId = active.id as string;
-        const overId = over.id as string;
-
-        if (activeId === overId) return;
-
-        const isActiveTask = active.data.current?.type === 'Task';
-        const isOverTask = over.data.current?.type === 'Task';
-        const isOverColumn = over.data.current?.type === 'Column';
-
-        if (!isActiveTask) return;
-
-        // Dragging over another task
-        if (isActiveTask && isOverTask) {
-            setLocalTasks((tasks) => {
-                const activeIndex = tasks.findIndex((t) => t.id === activeId);
-                const overIndex = tasks.findIndex((t) => t.id === overId);
-
-                if (tasks[activeIndex].status !== tasks[overIndex].status) {
-                    const newTasks = [...tasks];
-                    newTasks[activeIndex] = {
-                        ...newTasks[activeIndex],
-                        status: tasks[overIndex].status,
-                    };
-                    return arrayMove(newTasks, activeIndex, overIndex - 1 >= 0 ? overIndex - 1 : overIndex);
-                }
-
-                return arrayMove(tasks, activeIndex, overIndex);
-            });
-        }
-
-        // Dragging over a column
-        if (isActiveTask && isOverColumn) {
-            setLocalTasks((tasks) => {
-                const activeIndex = tasks.findIndex((t) => t.id === activeId);
-                const newStatus = overId as TaskStatus;
-
-                if (tasks[activeIndex].status !== newStatus) {
-                    const newTasks = [...tasks];
-                    newTasks[activeIndex] = {
-                        ...newTasks[activeIndex],
-                        status: newStatus,
-                    };
-                    return arrayMove(newTasks, activeIndex, activeIndex);
-                }
-                return tasks;
-            });
-        }
-    }, []);
+    // Removed aggressive onDragOver - all positioning now handled in onDragEnd
+    // This prevents the "jumping" behavior where cards move around erratically
 
     const onDragEnd = useCallback(async (event: DragEndEvent) => {
         const { active, over } = event;
@@ -143,63 +117,146 @@ export function FluxBoard({ tasks }: FluxBoardProps) {
 
         if (!activeTask) return;
 
-        // Determine final status
+        // Determine final status and position
         const columnIds = COLUMNS.map(c => c.id);
-        const isOverColumn = columnIds.includes(overId as TaskStatus);
+        const isOverColumn = columnIds.includes(overId);
+        const isOverTask = over.data.current?.type === 'Task';
         const overTask = localTasks.find(t => t.id === overId);
 
         let finalStatus = activeTask.status;
+        let targetIndex = -1;
 
         if (isOverColumn) {
-            finalStatus = overId as TaskStatus;
-        } else if (overTask) {
+            // Dropped directly on a column - add to end
+            finalStatus = overId;
+            const tasksInColumn = localTasks.filter(t => t.status === finalStatus && t.id !== draggedId);
+            targetIndex = tasksInColumn.length;
+        } else if (isOverTask && overTask) {
+            // Dropped on another task - insert at that position
             finalStatus = overTask.status;
+            const tasksInColumn = localTasks.filter(t => t.status === finalStatus);
+            const overIndex = tasksInColumn.findIndex(t => t.id === overId);
+            targetIndex = overIndex >= 0 ? overIndex : 0;
         }
 
-        // Calculate new order
-        const tasksInColumn = localTasks.filter(t => t.status === finalStatus);
-        const newOrder = tasksInColumn.findIndex(t => t.id === draggedId);
+        // Only update if something actually changed
+        const statusChanged = finalStatus !== activeTask.status;
+        const positionChanged = draggedId !== overId;
 
-        // If status or order changed, persist to store
-        if (finalStatus !== activeTask.status || draggedId !== overId) {
-            await moveTask(draggedId, finalStatus, newOrder >= 0 ? newOrder : undefined);
+        if (statusChanged || positionChanged) {
+            // Optimistic local update for smooth UX
+            setLocalTasks((tasks) => {
+                const newTasks = tasks.filter(t => t.id !== draggedId);
+                const updatedTask = { ...activeTask, status: finalStatus };
+                
+                // Find correct insert position
+                const tasksInColumn = newTasks.filter(t => t.status === finalStatus);
+                const insertIndex = targetIndex >= 0 ? targetIndex : tasksInColumn.length;
+                
+                // Find global index to insert at
+                let globalInsertIndex = 0;
+                let columnCount = 0;
+                for (let i = 0; i < newTasks.length; i++) {
+                    if (newTasks[i].status === finalStatus) {
+                        if (columnCount === insertIndex) {
+                            globalInsertIndex = i;
+                            break;
+                        }
+                        columnCount++;
+                    }
+                    globalInsertIndex = i + 1;
+                }
+                
+                newTasks.splice(globalInsertIndex, 0, updatedTask);
+                return newTasks;
+            });
+
+            // Persist to store
+            await moveTask(draggedId, finalStatus, targetIndex >= 0 ? targetIndex : undefined);
         }
     }, [localTasks, moveTask]);
 
     // Group tasks by column
-    const tasksByColumn = COLUMNS.reduce((acc, col) => {
+    const tasksByColumn = useMemo(() => {
+        return COLUMNS.reduce((acc, col) => {
         acc[col.id] = localTasks.filter((task) => task.status === col.id);
         return acc;
-    }, {} as Record<TaskStatus, Task[]>);
+        }, {} as Record<string, Task[]>);
+    }, [COLUMNS, localTasks]);
 
     const activeTask = activeId ? getTask(activeId) : null;
+
+    // Measuring configuration for better performance
+    const measuring = {
+        droppable: {
+            strategy: MeasuringStrategy.Always,
+        },
+    };
+
+    // Stagger animation for columns
+    const columnsContainerVariants = {
+        hidden: { opacity: 0 },
+        visible: {
+            opacity: 1,
+            transition: {
+                staggerChildren: 0.05,
+                delayChildren: 0.1,
+            },
+        },
+    };
 
     return (
         <DndContext
             sensors={sensors}
-            collisionDetection={closestCorners}
+            collisionDetection={closestCenter}
             onDragStart={onDragStart}
-            onDragOver={onDragOver}
             onDragEnd={onDragEnd}
+            measuring={measuring}
         >
-            <div className="flex h-full gap-6 overflow-x-auto pb-4 px-2 items-start">
-                {COLUMNS.map((col) => (
+            <motion.div 
+                className="flex h-full gap-6 overflow-x-auto pb-4 px-2 items-start scroll-smooth"
+                variants={columnsContainerVariants}
+                initial="hidden"
+                animate="visible"
+            >
+                {COLUMNS.map((col, index) => (
                     <BoardColumn
                         key={col.id}
                         id={col.id}
                         title={col.title}
                         tasks={tasksByColumn[col.id] || []}
+                        onEditTask={onEditTask}
                     />
                 ))}
-            </div>
+            </motion.div>
 
             {createPortal(
                 <DragOverlay dropAnimation={dropAnimationConfig}>
+                    <AnimatePresence>
                     {activeTask ? (
-                        <div className="w-80 cursor-grabbing">
+                            <motion.div 
+                className="w-80 cursor-grabbing"
+                                initial={{ scale: 1, opacity: 0.9, rotate: 0 }}
+                                animate={{ 
+                                    scale: 1.03, 
+                                    opacity: 1, 
+                                    rotate: 2,
+                                    transition: { 
+                                        type: "spring", 
+                        stiffness: 380, 
+                        damping: 28 
+                                    }
+                                }}
+                                exit={{ 
+                                    scale: 1, 
+                                    opacity: 0,
+                                    transition: { duration: 0.15 }
+                                }}
+                            >
                             <FluxCard task={activeTask} isOverlay />
-                        </div>
+                            </motion.div>
                     ) : null}
+                    </AnimatePresence>
                 </DragOverlay>,
                 document.body
             )}

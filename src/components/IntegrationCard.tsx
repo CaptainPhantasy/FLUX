@@ -16,15 +16,15 @@ export const IntegrationCard: React.FC<IntegrationCardProps> = ({
   // Dynamic styles for the glow effect based on brand color
   const glowStyle = isHovered
     ? {
-        boxShadow: `0 14px 40px -12px ${integration.brandColor}40`, // 40 is approx 25% opacity hex
-        borderColor: `${integration.brandColor}60`,
-        transform: 'translateY(-4px)',
+        boxShadow: `0 20px 60px -12px ${integration.brandColor}60, 0 12px 30px -8px ${integration.brandColor}30`,
+        borderColor: `${integration.brandColor}80`,
+        transform: 'translateY(-6px)',
       }
     : {};
 
   return (
     <div
-      className="group relative flex flex-col bg-white rounded-xl border border-slate-200 transition-all duration-300 ease-out h-[260px] overflow-hidden"
+      className="group relative flex flex-col bg-card rounded-2xl border border-border/60 transition-all duration-300 ease-out h-[260px] overflow-hidden shadow-md hover:shadow-lg hover:-translate-y-1.5"
       style={glowStyle}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
@@ -32,7 +32,7 @@ export const IntegrationCard: React.FC<IntegrationCardProps> = ({
       {/* Card Header: Icon & Status */}
       <div className="p-6 flex-1 flex flex-col items-center text-center z-10">
         <div 
-          className={`w-16 h-16 mb-4 rounded-2xl p-3 bg-slate-50 border border-slate-100 shadow-sm transition-all duration-300 ${!integration.isConnected && !isHovered ? 'grayscale opacity-70' : 'grayscale-0 opacity-100'}`}
+          className={`w-16 h-16 mb-4 rounded-2xl p-3 bg-muted border border-border shadow-md transition-all duration-300 ${!integration.isConnected && !isHovered ? 'grayscale opacity-70' : 'grayscale-0 opacity-100'}`}
         >
           {integration.icon}
         </div>
@@ -47,13 +47,13 @@ export const IntegrationCard: React.FC<IntegrationCardProps> = ({
       </div>
 
       {/* Card Footer: Action Area */}
-      <div className="p-4 mt-auto border-t border-slate-100 bg-slate-50/50 group-hover:bg-white/50 transition-colors">
+      <div className="p-4 mt-auto border-t border-border/60 bg-muted/40 group-hover:bg-card transition-colors">
         <button
           onClick={() => onToggle(integration)}
           className={`w-full flex items-center justify-between px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 ${
             integration.isConnected
               ? 'bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100'
-              : 'bg-white text-slate-700 border border-slate-200 hover:border-slate-300 hover:shadow-sm'
+              : 'bg-card text-foreground border border-border hover:border-violet-200 hover:shadow-md'
           }`}
         >
           <span className="flex items-center gap-2">

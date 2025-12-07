@@ -91,20 +91,6 @@ const CommentStream: React.FC<CommentStreamProps> = ({ comments }) => {
           <CommentNode key={comment.id} comment={comment} />
         ))}
       </div>
-      
-      {/* Scrollbar hide utility */}
-      <style>{`
-        .custom-scrollbar::-webkit-scrollbar {
-            width: 4px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-track {
-            background: transparent;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb {
-            background: #cbd5e1;
-            border-radius: 4px;
-        }
-      `}</style>
     </div>
   );
 };
