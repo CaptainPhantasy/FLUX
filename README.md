@@ -1,20 +1,57 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
-</div>
+<!-- Timestamp: 23:54:45 Dec 06, 2025 -->
 
-# Run and deploy your AI Studio app
+# Flux — The AI-Native Project & ITSM Platform
+**Last Updated:** 23:54:45 Dec 06, 2025  
+**Classification:** Product Overview & Market Position
 
-This contains everything you need to run your app locally.
+Flux is an AI-native project management and ITSM platform built to give teams time back. Every interaction flows through Gemini-powered intelligence that plans, triages, analyzes, and reports so humans can focus on the work that matters.
 
-View your app in AI Studio: https://ai.studio/apps/drive/1c5BmGc-5oUJwkoe9I7RPg3MCFWAXoeS2
+---
 
-## Run Locally
+## What Flux Delivers
+- **AI Architect:** Turn plain-language briefs into prioritized, estimated tasks in seconds.  
+- **Workflow AI:** Analyze any workflow for bottlenecks and automation opportunities.  
+- **Incident Triage & SLA Prediction:** Auto-severity, auto-assignment, and breach prediction before humans notice.  
+- **Boards & Sprints:** Kanban, backlog grooming, sprint planning, velocity tracking.  
+- **ITSM Console:** Incident, service catalog, change management, SLA tracking.  
+- **Analytics & Reporting:** Real-time dashboards and one-click executive summaries.  
+- **AI Command Terminal:** Ask for anything (“create a high-priority task”, “show tasks in review”, “switch to dark mode”) and Flux executes.
 
-**Prerequisites:**  Node.js
+---
 
+## Who Uses Flux
+- **Software Engineering:** Reduce context switching; auto-sync PRs, issues, and sprint updates.  
+- **IT Operations:** Faster MTTR with AI triage, risk-aware change management, and SLA compliance tracking.  
+- **Marketing & Creative:** Campaign-ready boards, AI task breakdowns, client-facing analytics.
 
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+---
+
+## Why It Matters
+Flux isn’t retrofitted with AI—it’s built around it. Teams report double-digit hours saved per person each week through:
+- Automated task creation and grooming  
+- Instant incident triage and SLA protection  
+- Self-updating boards and status reports  
+- One-click imports from legacy tools
+
+---
+
+## Deployment Paths
+- **Flux Cloud:** Managed, real-time sync.  
+- **Self-Hosted:** Full data sovereignty on your infra.  
+- **Local Mode:** Offline-first, device-persistent.
+
+---
+
+## Getting Started
+1) Describe your project in AI Architect to auto-generate a backlog.  
+2) Connect your existing tools in Integrations Hub.  
+3) Run work from the boards, service desk, or AI command terminal.  
+4) Open Analytics to share-ready reports.
+
+---
+
+**Contact:** hello@legacyai.io  
+**Docs:** docs.flux.legacyai.io  
+**Discord:** discord.gg/fluxpm
+
+<!-- EOF Timestamp: 23:54:45 Dec 06, 2025 -->
