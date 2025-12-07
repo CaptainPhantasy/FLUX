@@ -91,30 +91,38 @@ const FluxSidebar: React.FC = () => {
                     {isCollapsed ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}
                 </button>
 
-                {/* Logo Area - Using Real Logo */}
-                <div className="flex items-center gap-3 h-10 overflow-hidden">
-                    <motion.div
-                        variants={logoVariants}
-                        className="flex-shrink-0 w-10 h-10 rounded-xl overflow-hidden shadow-lg shadow-violet-500/20"
-                    >
-                        <img 
-                            src="/flux-logo-nopadding.jpeg" 
-                            alt="Flux" 
-                            className="w-full h-full object-cover"
-                        />
-                    </motion.div>
-
+                {/* Logo Area - Full Brand Logo */}
+                <div className="flex items-center h-10 overflow-hidden">
                     <AnimatePresence mode="wait">
-                        {!isCollapsed && (
-                            <motion.span
+                        {isCollapsed ? (
+                            <motion.div
+                                key="collapsed-logo"
+                                initial={{ opacity: 0, scale: 0.8 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                exit={{ opacity: 0, scale: 0.8 }}
+                                className="flex-shrink-0 w-10 h-10 rounded-xl overflow-hidden shadow-lg shadow-violet-500/20"
+                            >
+                                <img 
+                                    src="/flux-logo-nopadding.jpeg" 
+                                    alt="Flux" 
+                                    className="w-full h-full object-cover"
+                                />
+                            </motion.div>
+                        ) : (
+                            <motion.div
+                                key="expanded-logo"
                                 initial={{ opacity: 0, x: -10 }}
                                 animate={{ opacity: 1, x: 0 }}
                                 exit={{ opacity: 0, x: -10 }}
                                 transition={{ duration: 0.2 }}
-                                className="font-bold text-2xl tracking-tight text-foreground"
+                                className="h-10"
                             >
-                                Flux
-                            </motion.span>
+                                <img 
+                                    src="/flux-logo-main.jpeg" 
+                                    alt="Flux" 
+                                    className="h-full w-auto object-contain"
+                                />
+                            </motion.div>
                         )}
                     </AnimatePresence>
                 </div>
