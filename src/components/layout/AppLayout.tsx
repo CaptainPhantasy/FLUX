@@ -1,14 +1,42 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Outlet } from 'react-router-dom';
-import FluxSidebar from '../FluxSidebar'; // Using the advanced sidebar
+import FluxSidebar from '../sidebar/FluxSidebar';
 import FluxCommandTerminal from '../FluxCommandTerminal';
 import { Message } from '../../types';
+import { useFluxStore } from '@/lib/store';
 
 export const AppLayout: React.FC = () => {
+  // Initialize the store on mount
+  const { initialize, isInitialized, theme } = useFluxStore();
+  
   // Global Terminal State
   const [isTerminalOpen, setIsTerminalOpen] = useState(false);
   const [terminalHistory, setTerminalHistory] = useState<Message[]>([]);
   const [isThinking, setIsThinking] = useState(false);
+
+  // Initialize store on mount
+  useEffect(() => {
+    if (!isInitialized) {
+      initialize('local');
+    }
+  }, [initialize, isInitialized]);
+
+  // Apply theme on mount and when it changes
+  useEffect(() => {
+    if (theme === 'dark') {
+      document.documentElement.classList.add('dark');
+    } else if (theme === 'light') {
+      document.documentElement.classList.remove('dark');
+    } else {
+      // System preference
+      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      if (prefersDark) {
+        document.documentElement.classList.add('dark');
+      } else {
+        document.documentElement.classList.remove('dark');
+      }
+    }
+  }, [theme]);
 
   // Toggle Terminal with Ctrl+K
   useEffect(() => {

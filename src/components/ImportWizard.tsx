@@ -79,9 +79,9 @@ export const ImportWizard: React.FC<ImportWizardProps> = ({ onClose }) => {
           {/* Stepper Component */}
           <div className="flex items-center justify-between relative max-w-2xl mx-auto">
              {/* Track Line */}
-            <div className="absolute top-1/2 left-0 w-full h-0.5 bg-slate-800 -translate-y-1/2 z-0">
+            <div className="absolute top-1/2 left-0 w-full h-0.5 bg-slate-700 -translate-y-1/2 z-0">
                <motion.div 
-                 className="h-full bg-flux-500 origin-left"
+                 className="h-full bg-violet-500 origin-left"
                  initial={{ scaleX: 0 }}
                  animate={{ scaleX: (step - 1) / (steps.length - 1) }}
                  transition={{ duration: 0.4, ease: "easeInOut" }}
@@ -96,8 +96,8 @@ export const ImportWizard: React.FC<ImportWizardProps> = ({ onClose }) => {
                 <div key={s.id} className="relative z-10 flex flex-col items-center gap-3 group cursor-default">
                   <motion.div 
                     animate={{
-                      backgroundColor: isActive ? 'var(--color-flux-600)' : isCompleted ? 'var(--color-flux-600)' : 'var(--color-slate-900)',
-                      borderColor: isActive || isCompleted ? 'var(--color-flux-500)' : 'var(--color-slate-700)',
+                      backgroundColor: isActive ? '#7c3aed' : isCompleted ? '#7c3aed' : '#1e293b',
+                      borderColor: isActive || isCompleted ? '#8b5cf6' : '#475569',
                       scale: isActive ? 1.1 : 1,
                     }}
                     className={`w-8 h-8 rounded-full border-2 flex items-center justify-center transition-colors duration-300
@@ -106,10 +106,10 @@ export const ImportWizard: React.FC<ImportWizardProps> = ({ onClose }) => {
                     {isCompleted ? (
                       <Check className="w-4 h-4 text-white" />
                     ) : (
-                      <span className={`text-xs font-bold ${isActive ? 'text-white' : 'text-slate-500'}`}>{s.id}</span>
+                      <span className={`text-xs font-bold ${isActive ? 'text-white' : 'text-slate-400'}`}>{s.id}</span>
                     )}
                   </motion.div>
-                  <span className={`text-xs font-medium absolute top-10 whitespace-nowrap transition-colors duration-300 ${isActive ? 'text-white' : 'text-slate-500'}`}>
+                  <span className={`text-xs font-medium absolute top-10 whitespace-nowrap transition-colors duration-300 ${isActive ? 'text-white' : 'text-slate-400'}`}>
                     {s.label}
                   </span>
                 </div>

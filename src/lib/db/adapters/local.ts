@@ -185,9 +185,9 @@ const INITIAL_NOTIFICATIONS: Notification[] = [
 const INITIAL_PROJECTS: Project[] = [
     {
         id: 'p1',
-        name: 'Platform Redesign',
-        description: 'Complete overhaul of the core platform UI/UX',
-        color: '#8B5CF6',
+        name: 'Legacy AI',
+        description: 'AI-powered workflow automation',
+        color: '#10B981',
         createdAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
         updatedAt: new Date().toISOString(),
         ownerId: 'local-user-1',

@@ -11,7 +11,7 @@ import {
     LayoutDashboard,
     CheckCircle2,
     KanbanSquare,
-    Map as MapIcon,
+    FolderOpen,
     Settings,
     ChevronLeft,
     ChevronRight,
@@ -21,7 +21,12 @@ import {
     Search,
     ShieldAlert,
     Rocket,
-    Bot
+    Bot,
+    FileUp,
+    Palette,
+    BarChart3,
+    Plug,
+    FileBox
 } from 'lucide-react';
 import { SettingsModal } from '@/features/settings/SettingsModal';
 import { CreateTaskModal } from '@/features/tasks/CreateTaskModal';
@@ -42,15 +47,17 @@ const FluxSidebar: React.FC = () => {
 
     const navItems = [
         { icon: LayoutDashboard, label: 'Dashboard', path: '/app/dashboard' },
-        { icon: KanbanSquare, label: 'Board', path: '/app/board' },
+        { icon: KanbanSquare, label: 'Task Board', path: '/app/board' },
         { icon: Rocket, label: 'Sprints', path: '/app/sprints' },
         { icon: ShieldAlert, label: 'Service Desk', path: '/app/service-desk' },
-        { icon: Inbox, label: 'Inbox', path: '/app/inbox' },
         { icon: Bot, label: 'Automation', path: '/app/automation' },
-        { icon: MapIcon, label: 'Assets', path: '/app/assets' },
-        { icon: MapIcon, label: 'Documents', path: '/app/documents' },
-        { icon: Settings, label: 'Integrations', path: '/app/integrations' },
-        { icon: CheckCircle2, label: 'Analytics', path: '/app/analytics' },
+        { icon: BarChart3, label: 'Analytics', path: '/app/analytics' },
+        { icon: FileBox, label: 'Assets', path: '/app/assets' },
+        { icon: Inbox, label: 'Inbox', path: '/app/inbox' },
+        { icon: FolderOpen, label: 'Documents', path: '/app/documents' },
+        { icon: Plug, label: 'Integrations', path: '/app/integrations' },
+        { icon: FileUp, label: 'Import', path: '/app/import' },
+        { icon: Palette, label: 'Design System', path: '/app/design' },
     ];
 
     const sidebarVariants = {
