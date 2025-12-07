@@ -61,10 +61,13 @@ export function BoardCard({ task, onEdit }: BoardCardProps) {
         },
     });
 
-    // Custom smooth transition with spring feel
+    // Custom smooth transition with spring feel; keep width stable during drag
     const style = {
         transition: transition || 'transform 250ms cubic-bezier(0.25, 1, 0.5, 1)',
         transform: CSS.Translate.toString(transform),
+        touchAction: 'manipulation',
+        userSelect: 'none',
+        pointerEvents: 'auto',
     };
 
     if (isDragging) {
@@ -85,7 +88,7 @@ export function BoardCard({ task, onEdit }: BoardCardProps) {
             style={style}
             {...attributes}
             {...listeners}
-            className="touch-none"
+            className="touch-none select-none"
             variants={cardMotionVariants}
             initial="initial"
             animate="animate"

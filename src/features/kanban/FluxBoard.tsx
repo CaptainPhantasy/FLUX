@@ -8,7 +8,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import {
     DndContext,
     DragOverlay,
-    closestCenter,
+    rectIntersection,
     KeyboardSensor,
     PointerSensor,
     useSensor,
@@ -19,6 +19,7 @@ import {
     DropAnimation,
     MeasuringStrategy,
 } from '@dnd-kit/core';
+import { snapCenterToCursor } from '@dnd-kit/modifiers';
 import { CSS } from '@dnd-kit/utilities';
 import { arrayMove, sortableKeyboardCoordinates } from '@dnd-kit/sortable';
 import { createPortal } from 'react-dom';
@@ -56,6 +57,9 @@ const dropAnimationConfig: DropAnimation = {
     },
 };
 
+const CARD_WIDTH = 280;
+const CARD_HEIGHT = 180;
+
 interface FluxBoardProps {
     tasks: Task[];
     onEditTask?: (task: Task) => void;
@@ -82,14 +86,7 @@ export function FluxBoard({ tasks, onEditTask }: FluxBoardProps) {
 
     // Configure sensors for smooth, responsive drag activation
     const sensors = useSensors(
-        useSensor(PointerSensor, {
-            activationConstraint: {
-                // Lower distance for quicker response, small delay for intentionality
-                distance: 8,
-                delay: 100,
-                tolerance: 5,
-            },
-        }),
+        useSensor(PointerSensor),
         useSensor(KeyboardSensor, {
             coordinateGetter: sortableKeyboardCoordinates,
         })
@@ -208,10 +205,11 @@ export function FluxBoard({ tasks, onEditTask }: FluxBoardProps) {
     return (
         <DndContext
             sensors={sensors}
-            collisionDetection={closestCenter}
+            collisionDetection={rectIntersection}
             onDragStart={onDragStart}
             onDragEnd={onDragEnd}
             measuring={measuring}
+            modifiers={[snapCenterToCursor]}
         >
             <motion.div 
                 className="flex h-full gap-6 overflow-x-auto pb-4 px-2 items-start scroll-smooth"
@@ -235,12 +233,13 @@ export function FluxBoard({ tasks, onEditTask }: FluxBoardProps) {
                     <AnimatePresence>
                     {activeTask ? (
                             <motion.div 
-                className="w-80 cursor-grabbing"
+                                className="cursor-grabbing"
+                                style={{ width: CARD_WIDTH, maxWidth: CARD_WIDTH, height: CARD_HEIGHT }}
                                 initial={{ scale: 1, opacity: 0.9, rotate: 0 }}
                                 animate={{ 
-                                    scale: 1.03, 
+                                    scale: 1, 
                                     opacity: 1, 
-                                    rotate: 2,
+                                    rotate: 0,
                                     transition: { 
                                         type: "spring", 
                         stiffness: 380, 

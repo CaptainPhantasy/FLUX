@@ -21,7 +21,7 @@ import InboxPage from './pages/pages/InboxPage';
 import AssetsPage from './pages/pages/AssetsPage';
 import IntegrationsPage from './pages/pages/IntegrationsPage';
 import DocumentsPage from './pages/pages/DocumentsPage';
-import DesignSystemPage from './pages/pages/DesignSystemPage';
+import AppearancePage from './pages/pages/AppearancePage';
 import AIChatPage from './pages/pages/AIChatPage';
 import EditorPage from './pages/pages/EditorPage';
 import CommentsPage from './pages/pages/CommentsPage';
@@ -56,7 +56,7 @@ const App: React.FC = () => {
           <Route path="import" element={<ImportPage />} />
           <Route path="inbox" element={<InboxPage />} />
           <Route path="documents" element={<DocumentsPage />} />
-          <Route path="design" element={<DesignSystemPage />} />
+          <Route path="appearance" element={<AppearancePage />} />
           {/* AI & Collaboration */}
           <Route path="ai" element={<AIChatPage />} />
           <Route path="editor" element={<EditorPage />} />

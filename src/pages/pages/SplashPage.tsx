@@ -31,6 +31,7 @@ export default function SplashPage() {
             waveWidth={50}
             blur={10}
             speed="fast"
+            speedFactor={0.85}
             waveOpacity={0.5}
         >
             <button

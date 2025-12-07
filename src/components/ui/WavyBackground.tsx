@@ -29,6 +29,7 @@ type WavyBackgroundProps = {
   blur?: number;
   speed?: "slow" | "fast";
   waveOpacity?: number;
+  speedFactor?: number;
   [key: string]: any;
 };
 
@@ -42,6 +43,7 @@ export function WavyBackground({
   blur = 10,
   speed = "fast",
   waveOpacity = 0.5,
+  speedFactor = 1,
   ...props
 }: WavyBackgroundProps) {
   const noise = createNoise3D();
@@ -57,11 +59,11 @@ export function WavyBackground({
   const getSpeed = () => {
     switch (speed) {
       case "slow":
-        return 0.0045;
+        return 0.0045 * speedFactor;
       case "fast":
-        return 0.009;
+        return 0.009 * speedFactor;
       default:
-        return 0.0045;
+        return 0.0045 * speedFactor;
     }
   };
 

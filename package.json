@@ -18,6 +18,8 @@
     "init:super-admin": "tsx src/scripts/initialize-super-admin.ts"
   },
   "dependencies": {
+    "@base-ui-components/react": "1.0.0-rc.0",
+    "@dnd-kit/modifiers": "^9.0.0",
     "@google/genai": "1.0.0",
     "@google/generative-ai": "0.24.1",
     "@radix-ui/react-popover": "^1.1.5",

@@ -106,7 +106,7 @@ export function FluxCard({ task, isOverlay, isDragging, onEdit }: FluxCardProps)
             variant={isOverlay ? "default" : "hover"}
             padding="md"
             className={cn(
-                "group relative",
+                "group relative select-none touch-manipulation",
                 // Smooth transitions
                 "transition-all duration-300 ease-out",
                 // Interactive states

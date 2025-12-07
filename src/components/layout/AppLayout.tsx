@@ -1,15 +1,44 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Outlet } from 'react-router-dom';
-import FluxSidebar from '../sidebar/FluxSidebar';
+import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import FluxCommandTerminal from '../FluxCommandTerminal';
 import { Message } from '../../types';
 import { useFluxStore } from '@/lib/store';
 import { chatWithAssistant } from '@/services/geminiService';
 import BackgroundGradientAnimation from '@/components/ui/BackgroundGradientAnimation';
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+  SheetClose,
+} from '@/components/ui/sheet';
+import { Button } from '@/components/ui';
 
 export const AppLayout: React.FC = () => {
   // Initialize the store on mount
   const { initialize, isInitialized, theme, tasks, projects } = useFluxStore();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const navItems = [
+    { label: 'Dashboard', path: '/app/dashboard' },
+    { label: 'Task Board', path: '/app/board' },
+    { label: 'Sprints', path: '/app/sprints' },
+    { label: 'Service Desk', path: '/app/service-desk' },
+    { label: 'Automation', path: '/app/automation' },
+    { label: 'Analytics', path: '/app/analytics' },
+    { label: 'Assets', path: '/app/assets' },
+    { label: 'Inbox', path: '/app/inbox' },
+    { label: 'Documents', path: '/app/documents' },
+    { label: 'Appearance', path: '/app/appearance' },
+    { label: 'Integrations', path: '/app/integrations' },
+    { label: 'Import', path: '/app/import' },
+    // Removed Design System (internal only)
+    { label: 'AI Chat', path: '/app/ai' },
+    { label: 'Editor', path: '/app/editor' },
+    { label: 'Comments', path: '/app/comments' },
+  ];
   
   // Global Terminal State
   const [isTerminalOpen, setIsTerminalOpen] = useState(false);
@@ -93,10 +122,7 @@ export const AppLayout: React.FC = () => {
       className="pointer-events-none"
       interactive
     >
-      {console.info('[AppLayout] AI Studio frame active. Path:', window.location.pathname)}
-
       <div className="w-full h-full flex items-stretch text-slate-900 dark:text-slate-100">
-        <FluxSidebar />
         <main className="flex-1 overflow-auto relative z-0 scroll-smooth">
           <Outlet />
         </main>

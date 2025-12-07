@@ -26,6 +26,15 @@ import { useNavigate } from 'react-router-dom';
 import { Card, Button, Badge } from '@/components/ui';
 import { CreateTaskModal, EditTaskModal } from '@/features/tasks';
 import { useState } from 'react';
+import {
+    Sheet,
+    SheetContent,
+    SheetDescription,
+    SheetHeader,
+    SheetTitle,
+    SheetTrigger,
+    SheetClose,
+} from '@/components/ui/sheet';
 import type { Task } from '@/types';
 import BackgroundGradientAnimation from '@/components/ui/BackgroundGradientAnimation';
 
@@ -35,6 +44,23 @@ export default function DashboardPage() {
     const [isCreateTaskOpen, setIsCreateTaskOpen] = useState(false);
     const [editingTask, setEditingTask] = useState<Task | null>(null);
     const [filterStatus, setFilterStatus] = useState<string | null>(null);
+    const navItems = [
+        { label: 'Dashboard', path: '/app/dashboard' },
+        { label: 'Task Board', path: '/app/board' },
+        { label: 'Sprints', path: '/app/sprints' },
+        { label: 'Service Desk', path: '/app/service-desk' },
+        { label: 'Automation', path: '/app/automation' },
+        { label: 'Analytics', path: '/app/analytics' },
+        { label: 'Assets', path: '/app/assets' },
+        { label: 'Inbox', path: '/app/inbox' },
+        { label: 'Documents', path: '/app/documents' },
+        { label: 'Appearance', path: '/app/appearance' },
+        { label: 'Integrations', path: '/app/integrations' },
+        { label: 'Import', path: '/app/import' },
+        { label: 'AI Chat', path: '/app/ai' },
+        { label: 'Editor', path: '/app/editor' },
+        { label: 'Comments', path: '/app/comments' },
+    ];
 
     const filteredTasks = filterStatus 
         ? tasks.filter(t => t.status === filterStatus)
@@ -56,6 +82,36 @@ export default function DashboardPage() {
             interactive={true}
         >
                 <div className="w-full min-h-screen p-4 md:p-8">
+                {/* Sheet Nav trigger */}
+                <div className="flex items-center gap-3 mb-4">
+                    <Sheet>
+                        <SheetTrigger asChild>
+                            <Button variant="secondary">Open Navigation</Button>
+                        </SheetTrigger>
+                        <SheetContent side="left" className="data-[side=left]:max-w-xs">
+                            <SheetHeader>
+                                <SheetTitle>Flux Navigation</SheetTitle>
+                                <SheetDescription>Select a destination</SheetDescription>
+                            </SheetHeader>
+                            <div className="flex flex-col gap-2 px-2 py-2">
+                                {navItems.map((item) => (
+                                    <Button
+                                        key={item.path}
+                                        variant="ghost"
+                                        className="justify-start w-full text-sm"
+                                        onClick={() => navigate(item.path)}
+                                    >
+                                        {item.label}
+                                    </Button>
+                                ))}
+                            </div>
+                            <SheetClose asChild>
+                                <Button variant="outline" className="mt-4 w-full">Close</Button>
+                            </SheetClose>
+                        </SheetContent>
+                    </Sheet>
+                </div>
+
                 {/* Top controls */}
                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 px-2 md:px-4 lg:px-6 py-4">
                     <div>
