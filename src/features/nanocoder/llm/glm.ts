@@ -1,7 +1,9 @@
 // @ts-nocheck
 // =====================================
-// FLUX - Claude (Anthropic) LLM Provider
+// FLUX - GLM (Z.AI) LLM Provider
 // =====================================
+// Z.AI GLM-4.6 uses Anthropic-compatible API endpoint
+// Documentation: https://docs.z.ai/scenario-example/develop-tools/claude
 
 import Anthropic from '@anthropic-ai/sdk';
 import { executeTool } from '@/lib/ai/tools';
@@ -18,22 +20,31 @@ import type {
 import { toClaudeTool } from './types';
 import { PAGE_ROUTES, type PageName } from '../types';
 
-// Updated December 8, 2025
-// Using Claude 3.5 Haiku for optimal agent performance:
-// - Superior tool-calling reliability and multi-step reasoning
-// - Better instruction following for complex system prompts
-// - More accurate error reporting (won't say "done" when tools fail)
-// - Fast and cost-effective for high-volume agentic workloads
+// Updated December 7, 2025
+// Z.AI GLM-4.6 - Most capable model, 200K context, superior coding performance
 // 
-// API model names follow pattern: claude-{version}-{variant}-{date}
-// Check https://docs.anthropic.com/claude/docs/models-overview for latest
-const DEFAULT_MODEL = 'claude-3-5-haiku-20241022'; // Recommended for agents
-// Alternatives:
-// - 'claude-3-5-sonnet-20241022' for more complex reasoning tasks
-// - 'claude-3-opus-20241022' for highest capability (slower, more expensive)
+// API Endpoint Structure:
+// - Base URL: https://api.z.ai/api/anthropic
+// - Full endpoint: https://api.z.ai/api/anthropic/v1/messages (auto-appended by Anthropic SDK)
+// - Uses Anthropic-compatible API format
+// 
+// Documentation:
+// - API Guide: https://docs.z.ai/guides/llm/glm-4.6
+// - Claude Code Integration: https://docs.z.ai/scenario-example/develop-tools/claude
+//
+// Model Names:
+// - glm-4.6 (default, most capable, 200K context)
+// - glm-4.5-air (faster, cost-effective for simpler tasks)
+// - Other models for image/video generation (see Z.AI docs)
+const DEFAULT_MODEL = 'glm-4.6';
 
-export class ClaudeProvider implements LLMProvider {
-  readonly name = 'claude';
+const GLM_BASE_URL = 'https://api.z.ai/api/anthropic';
+
+// Singleton instance
+let glmProviderInstance: GLMProvider | null = null;
+
+export class GLMProvider implements LLMProvider {
+  readonly name = 'glm';
   
   private client: Anthropic | null = null;
   private modelName: string = DEFAULT_MODEL;
@@ -44,7 +55,7 @@ export class ClaudeProvider implements LLMProvider {
       this.configure({ apiKey });
     } else {
       // Try to get from env
-      const envKey = import.meta.env.VITE_ANTHROPIC_API_KEY;
+      const envKey = import.meta.env.VITE_GLM_API_KEY;
       if (envKey) {
         this.configure({ apiKey: envKey });
       }
@@ -59,20 +70,24 @@ export class ClaudeProvider implements LLMProvider {
     this.config = { ...this.config, ...config };
     
     if (config.apiKey) {
+      // Z.AI uses Anthropic-compatible endpoint
+      // Endpoint: https://api.z.ai/api/anthropic
+      // The Anthropic SDK will automatically append /v1/messages to this baseURL
+      // Documentation: https://docs.z.ai/scenario-example/develop-tools/claude
       this.client = new Anthropic({ 
         apiKey: config.apiKey,
+        baseURL: GLM_BASE_URL, // https://api.z.ai/api/anthropic
         dangerouslyAllowBrowser: true, // Required for client-side usage
       });
     }
     
     // Model selection: Use provided model or default
-    // Latest models (Dec 2025): Check for claude-3-5-sonnet-2025 variants or Opus 4.5
+    // GLM-4.6 is the most capable model with 200K context window
     // See MODEL_REFERENCE.md for latest model names
     if (config.model) {
       this.modelName = config.model;
     } else {
-      // Try to use latest available model, fallback to stable default
-      // In production, you may want to check API for available models
+      // Default to GLM-4.6 (most capable)
       this.modelName = DEFAULT_MODEL;
     }
   }
@@ -87,7 +102,7 @@ export class ClaudeProvider implements LLMProvider {
     history?: ChatMessage[]
   ): Promise<ChatResult> {
     if (!this.client) {
-      throw new Error('Anthropic API key not configured');
+      throw new Error('GLM API key not configured');
     }
 
     const toolsCalled: string[] = [];
@@ -98,7 +113,7 @@ export class ClaudeProvider implements LLMProvider {
       const context = buildAgentContext();
       systemPrompt = buildEnhancedSystemPrompt(context);
     } catch (error) {
-      console.error('[Claude] Error building context, using fallback prompt:', error);
+      console.error('[GLM] Error building context, using fallback prompt:', error);
       // Fallback to basic prompt if context building fails
       systemPrompt = `You are Nanocoder, an AI assistant for FLUX project management platform.
 You can navigate pages, create tasks, update task statuses, switch themes, and control the UI.
@@ -115,40 +130,38 @@ Be helpful and execute actions immediately.`;
       { role: 'user', content: message },
     ];
 
-    // Convert tools to Claude format
+    // Convert tools to Claude format (GLM uses same format)
     const claudeTools = tools?.map(toClaudeTool) as Anthropic.Tool[] | undefined;
 
     // Initial request with enhanced system prompt
+    // API call structure matches Anthropic Messages API:
+    // POST https://api.z.ai/api/anthropic/v1/messages
+    // Model: glm-4.6 (or glm-4.5-air)
+    // See: https://docs.z.ai/guides/llm/glm-4.6
     let response = await this.client.messages.create({
-      model: this.modelName,
-      max_tokens: this.config.maxTokens || 1024,
+      model: this.modelName, // 'glm-4.6' or 'glm-4.5-air'
+      max_tokens: this.config.maxTokens || 4096,
       system: systemPrompt,
       messages,
       tools: claudeTools,
     });
 
-    let responseText = '';
-    
-    // Process tool calls
-    let iterations = 0;
-    const MAX_ITERATIONS = 5;
-
-    while (response.stop_reason === 'tool_use' && iterations < MAX_ITERATIONS) {
-      const toolUseBlocks = response.content.filter(
-        (block): block is Anthropic.ToolUseBlock => block.type === 'tool_use'
+    // Handle tool calls (same as Claude provider)
+    while (response.stop_reason === 'tool_use' && response.content) {
+      const toolCalls = response.content.filter(
+        (item): item is Anthropic.ToolUseBlock => item.type === 'tool_use'
       );
 
-      if (toolUseBlocks.length === 0) break;
+      if (toolCalls.length === 0) break;
 
-      // Build tool results
-      const toolResults: Anthropic.ToolResultBlockParam[] = [];
+      const toolResults: Anthropic.ToolResultBlock[] = [];
 
-      for (const toolUse of toolUseBlocks) {
-        const functionName = toolUse.name;
-        const functionArgs = toolUse.input as Record<string, unknown>;
+      for (const toolCall of toolCalls) {
+        const functionName = toolCall.name;
+        const functionArgs = toolCall.input as Record<string, unknown>;
         
         toolsCalled.push(functionName);
-        console.log('[Claude] Executing tool:', functionName, functionArgs);
+        console.log('[GLM] Executing tool:', functionName, functionArgs);
 
         let result: { success: boolean; message: string; data?: unknown };
 
@@ -194,7 +207,7 @@ Be helpful and execute actions immediately.`;
             }
           );
           if (!verification.verified) {
-            console.warn('[Claude] Action verification failed:', verification.message);
+            console.warn('[GLM] Action verification failed:', verification.message);
             result.message += ` (Note: ${verification.message})`;
           }
         }
@@ -212,12 +225,12 @@ Be helpful and execute actions immediately.`;
         
         toolResults.push({
           type: 'tool_result',
-          tool_use_id: toolUse.id,
+          tool_use_id: toolCall.id,
           content: toolResultContent,
         });
       }
 
-      // Add assistant response and tool results to messages
+      // Continue conversation with tool results
       messages.push({
         role: 'assistant',
         content: response.content,
@@ -227,47 +240,43 @@ Be helpful and execute actions immediately.`;
         content: toolResults,
       });
 
-      // Get next response (reuse the same context-aware system prompt)
+      // Continue conversation with tool results
+      // API call: POST https://api.z.ai/api/anthropic/v1/messages
       response = await this.client.messages.create({
-        model: this.modelName,
-        max_tokens: this.config.maxTokens || 1024,
+        model: this.modelName, // 'glm-4.6' or configured model
+        max_tokens: this.config.maxTokens || 4096,
         system: systemPrompt,
         messages,
-        tools: claudeTools as Anthropic.Tool[] | undefined,
+        tools: claudeTools,
       });
-
-      iterations++;
     }
 
-    // Extract text from final response
-    for (const block of response.content) {
-      if (block.type === 'text') {
-        responseText += block.text;
-      }
-    }
-
+    // Extract final response text
+    let responseText = response.content
+      .filter((item): item is Anthropic.TextBlock => item.type === 'text')
+      .map(item => item.text)
+      .join('\n');
+    
     // If no response text but tools were called, summarize results
     if (!responseText && toolsCalled.length > 0) {
       responseText = `Executed ${toolsCalled.length} action(s). Please check the tool results above for details.`;
     }
-    
+
     return {
-      response: responseText || 'I processed your request. If you expected a specific action, please check if it completed successfully.',
+      response: responseText || 'I completed the requested actions.',
       toolsCalled,
       rawResponse: response,
     };
   }
 }
 
-// Singleton instance
-let instance: ClaudeProvider | null = null;
-
-export function getClaudeProvider(): ClaudeProvider {
-  if (!instance) {
-    instance = new ClaudeProvider();
+/**
+ * Get or create singleton GLM provider instance
+ */
+export function getGLMProvider(): GLMProvider {
+  if (!glmProviderInstance) {
+    glmProviderInstance = new GLMProvider();
   }
-  return instance;
+  return glmProviderInstance;
 }
-
-export default ClaudeProvider;
 
