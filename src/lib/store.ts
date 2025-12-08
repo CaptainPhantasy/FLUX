@@ -20,6 +20,13 @@ import type {
     Message,
     StorageMode,
     AppConfig,
+    Email,
+    EmailAccount,
+    EmailCreateInput,
+    EmailUpdateInput,
+    EmailAccountCreateInput,
+    EmailLabel,
+    EmailFolder,
 } from '@/types';
 import { getAdapter, initializeDb, isDbInitialized } from '@/lib/db';
 
@@ -57,6 +64,18 @@ interface IntegrationSlice {
     integrations: Integration[];
 }
 
+interface EmailSlice {
+    emails: Email[];
+    emailAccounts: EmailAccount[];
+    emailLabels: EmailLabel[];
+    selectedEmailId: string | null;
+    selectedAccountId: string | null;
+    currentFolder: EmailFolder;
+    searchQuery: string;
+    isLoadingEmails: boolean;
+    unreadEmailCount: number;
+}
+
 interface TerminalSlice {
     isTerminalOpen: boolean;
     terminalHistory: Message[];
@@ -68,6 +87,8 @@ interface UISlice {
     sidebarCollapsed: boolean;
     isOnboardingComplete: boolean;
     workflowMode: 'agile' | 'ccaas' | 'itsm';
+    // Agent selection tracking
+    selectedIncidentId: string | null;
 }
 
 interface AppSlice {
@@ -88,6 +109,7 @@ interface FluxState extends
     ProjectSlice,
     AssetSlice,
     IntegrationSlice,
+    EmailSlice,
     TerminalSlice,
     UISlice,
     AppSlice { }
@@ -138,6 +160,37 @@ interface FluxActions {
     connectIntegration: (type: Integration['type'], config: Record<string, unknown>) => Promise<void>;
     disconnectIntegration: (id: string) => Promise<void>;
 
+    // Email Account Actions
+    fetchEmailAccounts: () => Promise<void>;
+    createEmailAccount: (input: EmailAccountCreateInput) => Promise<EmailAccount | null>;
+    updateEmailAccount: (id: string, data: Partial<EmailAccount>) => Promise<EmailAccount | null>;
+    deleteEmailAccount: (id: string) => Promise<boolean>;
+    syncEmailAccount: (id: string) => Promise<boolean>;
+    testEmailAccountConnection: (id: string) => Promise<{ success: boolean; error?: string }>;
+    setSelectedAccount: (id: string | null) => void;
+
+    // Email Actions
+    fetchEmails: (accountId?: string, folder?: EmailFolder) => Promise<void>;
+    searchEmails: (query: string, folder?: EmailFolder) => Promise<void>;
+    getEmailById: (id: string) => Promise<Email | null>;
+    markEmailRead: (id: string, isRead: boolean) => Promise<void>;
+    markEmailStarred: (id: string, isStarred: boolean) => Promise<void>;
+    archiveEmail: (id: string, isArchived: boolean) => Promise<void>;
+    deleteEmail: (id: string) => Promise<boolean>;
+    moveEmailToFolder: (id: string, folder: EmailFolder) => Promise<void>;
+    setSelectedEmail: (id: string | null) => void;
+    setCurrentFolder: (folder: EmailFolder) => void;
+    setSearchQuery: (query: string) => void;
+    fetchUnreadEmailCount: () => Promise<void>;
+
+    // Email Label Actions
+    fetchEmailLabels: () => Promise<void>;
+    createEmailLabel: (name: string, color?: string) => Promise<EmailLabel | null>;
+    updateEmailLabel: (id: string, data: Partial<EmailLabel>) => Promise<EmailLabel | null>;
+    deleteEmailLabel: (id: string) => Promise<boolean>;
+    addLabelToEmail: (emailId: string, labelId: string) => Promise<void>;
+    removeLabelFromEmail: (emailId: string, labelId: string) => Promise<void>;
+
     // Terminal Actions
     openTerminal: () => void;
     closeTerminal: () => void;
@@ -152,6 +205,7 @@ interface FluxActions {
     setSidebarCollapsed: (collapsed: boolean) => void;
     completeOnboarding: () => void;
     setWorkflowMode: (mode: 'agile' | 'ccaas' | 'itsm') => void;
+    setSelectedIncidentId: (id: string | null) => void;
 
     // Error handling
     setError: (error: string | null) => void;
@@ -187,16 +241,28 @@ const initialState: FluxState = {
     // Integrations
     integrations: [],
 
+    // Emails
+    emails: [],
+    emailAccounts: [],
+    emailLabels: [],
+    selectedEmailId: null,
+    selectedAccountId: null,
+    currentFolder: 'inbox',
+    searchQuery: '',
+    isLoadingEmails: false,
+    unreadEmailCount: 0,
+
     // Terminal
     isTerminalOpen: false,
     terminalHistory: [],
     isTerminalThinking: false,
 
     // UI
-    theme: 'dark',
+    theme: 'light',
     sidebarCollapsed: false,
     isOnboardingComplete: false,
     workflowMode: 'agile',
+    selectedIncidentId: null,
 
     // App
     config: {
@@ -236,12 +302,14 @@ export const useFluxStore = create<FluxState & FluxActions>()(
                         const db = getAdapter(storageMode);
 
                         // Fetch initial data in parallel
-                        const [user, tasks, notifications, projects, integrations] = await Promise.all([
+                        const [user, tasks, notifications, projects, integrations, emailAccounts, unreadEmailCount] = await Promise.all([
                             db.getCurrentUser(),
                             db.getTasks(),
                             db.getNotifications(),
                             db.getProjects(),
                             db.getIntegrations(),
+                            db.getEmailAccounts().catch(() => []),
+                            db.getUnreadEmailCount().catch(() => 0),
                         ]);
 
                         set((state) => {
@@ -252,6 +320,8 @@ export const useFluxStore = create<FluxState & FluxActions>()(
                             state.unreadCount = notifications.filter(n => !n.isRead).length;
                             state.projects = projects;
                             state.integrations = integrations;
+                            state.emailAccounts = emailAccounts;
+                            state.unreadEmailCount = unreadEmailCount;
                             state.config.storageMode = storageMode;
                             state.config.isSetupComplete = true;
                             state.isInitialized = true;
@@ -349,20 +419,53 @@ export const useFluxStore = create<FluxState & FluxActions>()(
                 },
 
                 createTask: async (input) => {
-                    const db = getAdapter(get().config.storageMode);
+                    if (!isDbInitialized()) {
+                        console.error('[FluxStore] Cannot create task: Database not initialized');
+                        return null;
+                    }
+
+                    // Defensive check: Verify authentication for Supabase storage mode
+                    // Note: Routes should be protected, but this handles session expiration during use
+                    const { config, isAuthenticated } = get();
+                    if (config.storageMode === 'supabase' && !isAuthenticated) {
+                        console.error('[FluxStore] Cannot create task: User not authenticated (required for Supabase). Session may have expired.');
+                        return null;
+                    }
+
+                    const db = getAdapter(config.storageMode);
 
                     try {
                         const task = await db.createTask(input);
                         // Subscription will update state automatically
                         return task;
                     } catch (error) {
-                        console.error('Failed to create task:', error);
+                        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+                        console.error('[FluxStore] Failed to create task:', errorMessage);
+                        
+                        // Check for authentication errors
+                        if (errorMessage.includes('JWT') || errorMessage.includes('auth') || errorMessage.includes('401') || errorMessage.includes('unauthorized')) {
+                            console.error('[FluxStore] Authentication error detected - user may need to log in');
+                        }
+                        
                         return null;
                     }
                 },
 
                 updateTask: async (id, data) => {
-                    const db = getAdapter(get().config.storageMode);
+                    if (!isDbInitialized()) {
+                        console.error('[FluxStore] Cannot update task: Database not initialized');
+                        return null;
+                    }
+
+                    // Defensive check: Verify authentication for Supabase storage mode
+                    // Handles session expiration during use
+                    const { config, isAuthenticated } = get();
+                    if (config.storageMode === 'supabase' && !isAuthenticated) {
+                        console.error('[FluxStore] Cannot update task: User not authenticated (required for Supabase). Session may have expired.');
+                        return null;
+                    }
+
+                    const db = getAdapter(config.storageMode);
 
                     // Optimistic update
                     set((state) => {
@@ -372,14 +475,21 @@ export const useFluxStore = create<FluxState & FluxActions>()(
                         }
                     });
 
-                    const updated = await db.updateTask(id, data);
+                    try {
+                        const updated = await db.updateTask(id, data);
 
-                    if (!updated) {
+                        if (!updated) {
+                            // Rollback on failure
+                            await get().fetchTasks();
+                        }
+
+                        return updated;
+                    } catch (error) {
+                        console.error('[FluxStore] Failed to update task:', error);
                         // Rollback on failure
                         await get().fetchTasks();
+                        return null;
                     }
-
-                    return updated;
                 },
 
                 deleteTask: async (id) => {
@@ -408,7 +518,20 @@ export const useFluxStore = create<FluxState & FluxActions>()(
                 },
 
                 moveTask: async (taskId, newStatus, newOrder) => {
-                    const db = getAdapter(get().config.storageMode);
+                    if (!isDbInitialized()) {
+                        console.error('[FluxStore] Cannot move task: Database not initialized');
+                        return;
+                    }
+
+                    // Defensive check: Verify authentication for Supabase storage mode
+                    // Handles session expiration during use
+                    const { config, isAuthenticated } = get();
+                    if (config.storageMode === 'supabase' && !isAuthenticated) {
+                        console.error('[FluxStore] Cannot move task: User not authenticated (required for Supabase). Session may have expired.');
+                        return;
+                    }
+
+                    const db = getAdapter(config.storageMode);
 
                     // Optimistic update
                     set((state) => {
@@ -420,7 +543,13 @@ export const useFluxStore = create<FluxState & FluxActions>()(
                         }
                     });
 
-                    await db.updateTaskOrder(taskId, newOrder || 0, newStatus);
+                    try {
+                        await db.updateTaskOrder(taskId, newOrder || 0, newStatus);
+                    } catch (error) {
+                        console.error('[FluxStore] Failed to move task:', error);
+                        // Rollback on failure
+                        await get().fetchTasks();
+                    }
                 },
 
                 archiveTasks: async (ids) => {
@@ -645,6 +774,344 @@ export const useFluxStore = create<FluxState & FluxActions>()(
                 },
 
                 // ==================
+                // Email Account Actions
+                // ==================
+                fetchEmailAccounts: async () => {
+                    if (!isDbInitialized()) return;
+
+                    const db = getAdapter(get().config.storageMode);
+                    const accounts = await db.getEmailAccounts();
+
+                    set((state) => {
+                        state.emailAccounts = accounts;
+                    });
+                },
+
+                createEmailAccount: async (input) => {
+                    const db = getAdapter(get().config.storageMode);
+
+                    try {
+                        const account = await db.createEmailAccount(input);
+
+                        set((state) => {
+                            state.emailAccounts.push(account);
+                        });
+
+                        return account;
+                    } catch (error) {
+                        console.error('Failed to create email account:', error);
+                        return null;
+                    }
+                },
+
+                updateEmailAccount: async (id, data) => {
+                    const db = getAdapter(get().config.storageMode);
+
+                    const updated = await db.updateEmailAccount(id, data);
+
+                    if (updated) {
+                        set((state) => {
+                            const index = state.emailAccounts.findIndex(a => a.id === id);
+                            if (index !== -1) {
+                                state.emailAccounts[index] = updated;
+                            }
+                        });
+                    }
+
+                    return updated;
+                },
+
+                deleteEmailAccount: async (id) => {
+                    const db = getAdapter(get().config.storageMode);
+
+                    const success = await db.deleteEmailAccount(id);
+
+                    if (success) {
+                        set((state) => {
+                            state.emailAccounts = state.emailAccounts.filter(a => a.id !== id);
+                        });
+                    }
+
+                    return success;
+                },
+
+                syncEmailAccount: async (id) => {
+                    const db = getAdapter(get().config.storageMode);
+                    await db.syncEmailAccount(id);
+                    // Refresh emails after sync
+                    await get().fetchEmails(id);
+                },
+
+                testEmailAccountConnection: async (id) => {
+                    const db = getAdapter(get().config.storageMode);
+                    return await db.testEmailAccountConnection(id);
+                },
+
+                setSelectedAccount: (id) => {
+                    set((state) => {
+                        state.selectedAccountId = id;
+                    });
+                    // Refresh emails when account changes
+                    get().fetchEmails(id);
+                },
+
+                // ==================
+                // Email Actions
+                // ==================
+                fetchEmails: async (accountId, folder) => {
+                    if (!isDbInitialized()) return;
+
+                    set((state) => { state.isLoadingEmails = true; });
+
+                    const db = getAdapter(get().config.storageMode);
+                    const currentFolder = folder || get().currentFolder;
+                    const emails = await db.getEmails(accountId, currentFolder);
+
+                    set((state) => {
+                        state.emails = emails;
+                        state.isLoadingEmails = false;
+                    });
+                },
+
+                searchEmails: async (query, folder) => {
+                    if (!isDbInitialized()) return;
+
+                    set((state) => {
+                        state.isLoadingEmails = true;
+                        state.searchQuery = query;
+                    });
+
+                    const db = getAdapter(get().config.storageMode);
+                    const currentFolder = folder || get().currentFolder;
+                    const emails = await db.searchEmails(query, currentFolder);
+
+                    set((state) => {
+                        state.emails = emails;
+                        state.isLoadingEmails = false;
+                    });
+                },
+
+                getEmailById: async (id) => {
+                    const db = getAdapter(get().config.storageMode);
+                    return await db.getEmailById(id);
+                },
+
+                markEmailRead: async (id, isRead) => {
+                    const db = getAdapter(get().config.storageMode);
+
+                    // Optimistic update
+                    set((state) => {
+                        const email = state.emails.find(e => e.id === id);
+                        if (email) {
+                            email.isRead = isRead;
+                            if (isRead && !email.isRead) {
+                                state.unreadEmailCount = Math.max(0, state.unreadEmailCount - 1);
+                            } else if (!isRead && email.isRead) {
+                                state.unreadEmailCount += 1;
+                            }
+                        }
+                    });
+
+                    await db.markEmailRead(id, isRead);
+                    await get().fetchUnreadEmailCount();
+                },
+
+                markEmailStarred: async (id, isStarred) => {
+                    const db = getAdapter(get().config.storageMode);
+
+                    // Optimistic update
+                    set((state) => {
+                        const email = state.emails.find(e => e.id === id);
+                        if (email) {
+                            email.isStarred = isStarred;
+                        }
+                    });
+
+                    await db.markEmailStarred(id, isStarred);
+                },
+
+                archiveEmail: async (id, isArchived) => {
+                    const db = getAdapter(get().config.storageMode);
+
+                    // Optimistic update
+                    set((state) => {
+                        const email = state.emails.find(e => e.id === id);
+                        if (email) {
+                            email.isArchived = isArchived;
+                        }
+                    });
+
+                    await db.archiveEmail(id, isArchived);
+                },
+
+                deleteEmail: async (id) => {
+                    const db = getAdapter(get().config.storageMode);
+
+                    // Optimistic update
+                    const previousEmails = get().emails;
+                    set((state) => {
+                        state.emails = state.emails.filter(e => e.id !== id);
+                    });
+
+                    const success = await db.deleteEmail(id);
+
+                    if (!success) {
+                        // Rollback
+                        set((state) => {
+                            state.emails = previousEmails;
+                        });
+                    }
+
+                    return success;
+                },
+
+                moveEmailToFolder: async (id, folder) => {
+                    const db = getAdapter(get().config.storageMode);
+
+                    // Optimistic update
+                    set((state) => {
+                        const email = state.emails.find(e => e.id === id);
+                        if (email) {
+                            email.folder = folder;
+                        }
+                    });
+
+                    await db.moveEmailToFolder(id, folder);
+                },
+
+                setSelectedEmail: (id) => {
+                    set((state) => {
+                        state.selectedEmailId = id;
+                    });
+                },
+
+                setCurrentFolder: (folder) => {
+                    set((state) => {
+                        state.currentFolder = folder;
+                    });
+                    // Refresh emails when folder changes
+                    get().fetchEmails(get().selectedAccountId || undefined, folder);
+                },
+
+                setSearchQuery: (query) => {
+                    set((state) => {
+                        state.searchQuery = query;
+                    });
+                    if (query) {
+                        get().searchEmails(query);
+                    } else {
+                        get().fetchEmails();
+                    }
+                },
+
+                fetchUnreadEmailCount: async () => {
+                    if (!isDbInitialized()) return;
+
+                    const db = getAdapter(get().config.storageMode);
+                    const count = await db.getUnreadEmailCount();
+
+                    set((state) => {
+                        state.unreadEmailCount = count;
+                    });
+                },
+
+                // ==================
+                // Email Label Actions
+                // ==================
+                fetchEmailLabels: async () => {
+                    if (!isDbInitialized()) return;
+
+                    const db = getAdapter(get().config.storageMode);
+                    const labels = await db.getEmailLabels();
+
+                    set((state) => {
+                        state.emailLabels = labels;
+                    });
+                },
+
+                createEmailLabel: async (name, color) => {
+                    const db = getAdapter(get().config.storageMode);
+
+                    try {
+                        const label = await db.createEmailLabel(name, color);
+
+                        set((state) => {
+                            state.emailLabels.push(label);
+                        });
+
+                        return label;
+                    } catch (error) {
+                        console.error('Failed to create email label:', error);
+                        return null;
+                    }
+                },
+
+                updateEmailLabel: async (id, data) => {
+                    const db = getAdapter(get().config.storageMode);
+
+                    const updated = await db.updateEmailLabel(id, data);
+
+                    if (updated) {
+                        set((state) => {
+                            const index = state.emailLabels.findIndex(l => l.id === id);
+                            if (index !== -1) {
+                                state.emailLabels[index] = updated;
+                            }
+                        });
+                    }
+
+                    return updated;
+                },
+
+                deleteEmailLabel: async (id) => {
+                    const db = getAdapter(get().config.storageMode);
+
+                    const success = await db.deleteEmailLabel(id);
+
+                    if (success) {
+                        set((state) => {
+                            state.emailLabels = state.emailLabels.filter(l => l.id !== id);
+                        });
+                    }
+
+                    return success;
+                },
+
+                addLabelToEmail: async (emailId, labelId) => {
+                    const db = getAdapter(get().config.storageMode);
+
+                    // Optimistic update
+                    const label = get().emailLabels.find(l => l.id === labelId);
+                    if (label) {
+                        set((state) => {
+                            const email = state.emails.find(e => e.id === emailId);
+                            if (email && !email.labels?.includes(label.name)) {
+                                email.labels = [...(email.labels || []), label.name];
+                            }
+                        });
+                    }
+
+                    await db.addLabelToEmail(emailId, labelId);
+                },
+
+                removeLabelFromEmail: async (emailId, labelId) => {
+                    const db = getAdapter(get().config.storageMode);
+
+                    // Optimistic update
+                    const label = get().emailLabels.find(l => l.id === labelId);
+                    if (label) {
+                        set((state) => {
+                            const email = state.emails.find(e => e.id === emailId);
+                            if (email) {
+                                email.labels = email.labels?.filter(l => l !== label.name) || [];
+                            }
+                        });
+                    }
+
+                    await db.removeLabelFromEmail(emailId, labelId);
+                },
+
+                // ==================
                 // Terminal Actions
                 // ==================
                 openTerminal: () => {
@@ -736,6 +1203,12 @@ export const useFluxStore = create<FluxState & FluxActions>()(
                     console.log('[Store] setWorkflowMode called with:', mode);
                     set((state) => {
                         state.workflowMode = mode;
+                    });
+                },
+
+                setSelectedIncidentId: (id) => {
+                    set((state) => {
+                        state.selectedIncidentId = id;
                     });
                 },
 

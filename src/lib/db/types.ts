@@ -14,6 +14,16 @@ import type {
     Project,
     Asset,
     Integration,
+    Email,
+    EmailAccount,
+    EmailCreateInput,
+    EmailUpdateInput,
+    EmailAccountCreateInput,
+    EmailLabel,
+    EmailFolder,
+    AgentConversation,
+    AgentActionLog,
+    AgentEntityMapping,
 } from '@/types';
 
 /**
@@ -78,10 +88,63 @@ export interface FluxDataProvider {
     syncIntegration(id: string): Promise<boolean>;
 
     // ==================
+    // Email Account Operations
+    // ==================
+    getEmailAccounts(): Promise<EmailAccount[]>;
+    getEmailAccountById(id: string): Promise<EmailAccount | null>;
+    createEmailAccount(input: EmailAccountCreateInput): Promise<EmailAccount>;
+    updateEmailAccount(id: string, data: Partial<EmailAccount>): Promise<EmailAccount | null>;
+    deleteEmailAccount(id: string): Promise<boolean>;
+    syncEmailAccount(id: string): Promise<boolean>;
+    testEmailAccountConnection(id: string): Promise<{ success: boolean; error?: string }>;
+
+    // ==================
+    // Email Operations
+    // ==================
+    getEmails(accountId?: string, folder?: EmailFolder, limit?: number, offset?: number): Promise<Email[]>;
+    getEmailById(id: string): Promise<Email | null>;
+    searchEmails(query: string, folder?: EmailFolder, limit?: number): Promise<Email[]>;
+    createEmail(input: EmailCreateInput): Promise<Email>;
+    updateEmail(id: string, data: EmailUpdateInput): Promise<Email | null>;
+    deleteEmail(id: string): Promise<boolean>; // Local delete only
+    markEmailRead(id: string, isRead: boolean): Promise<Email | null>;
+    markEmailStarred(id: string, isStarred: boolean): Promise<Email | null>;
+    archiveEmail(id: string, isArchived: boolean): Promise<Email | null>;
+    moveEmailToFolder(id: string, folder: EmailFolder): Promise<Email | null>;
+    getUnreadEmailCount(): Promise<number>;
+
+    // ==================
+    // Email Label Operations
+    // ==================
+    getEmailLabels(): Promise<EmailLabel[]>;
+    createEmailLabel(name: string, color?: string): Promise<EmailLabel>;
+    updateEmailLabel(id: string, data: Partial<EmailLabel>): Promise<EmailLabel | null>;
+    deleteEmailLabel(id: string): Promise<boolean>;
+    addLabelToEmail(emailId: string, labelId: string): Promise<boolean>;
+    removeLabelFromEmail(emailId: string, labelId: string): Promise<boolean>;
+
+    // ==================
     // Lifecycle
     // ==================
     initialize(): Promise<void>;
     disconnect(): Promise<void>;
+
+    // ==================
+    // Agent Operations
+    // ==================
+    // Conversation Memory
+    getAgentConversation(sessionId: string): Promise<AgentConversation | null>;
+    saveAgentConversation(conversation: Omit<AgentConversation, 'id' | 'createdAt' | 'updatedAt'>): Promise<AgentConversation>;
+    updateAgentConversation(sessionId: string, messages: AgentConversation['messages']): Promise<AgentConversation | null>;
+    
+    // Action Logging
+    logAgentAction(action: Omit<AgentActionLog, 'id' | 'createdAt'>): Promise<AgentActionLog>;
+    getAgentActionLog(sessionId: string, limit?: number): Promise<AgentActionLog[]>;
+    
+    // Entity Mappings
+    createEntityMapping(mapping: Omit<AgentEntityMapping, 'id' | 'createdAt'>): Promise<AgentEntityMapping>;
+    getEntityMappings(sourceType: string, sourceId: string): Promise<AgentEntityMapping[]>;
+    getEntityMappingsByTarget(targetType: string, targetId: string): Promise<AgentEntityMapping[]>;
 
     // ==================
     // Real-time subscriptions (optional)

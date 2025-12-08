@@ -15,6 +15,9 @@ import type {
     Project,
     Asset,
     Integration,
+    AgentConversation,
+    AgentActionLog,
+    AgentEntityMapping,
 } from '@/types';
 
 const STORAGE_KEYS = {
@@ -24,6 +27,9 @@ const STORAGE_KEYS = {
     projects: 'flux_projects',
     assets: 'flux_assets',
     integrations: 'flux_integrations',
+    agentConversations: 'flux_agent_conversations',
+    agentActionLogs: 'flux_agent_action_logs',
+    agentEntityMappings: 'flux_agent_entity_mappings',
 } as const;
 
 // Utility functions
@@ -601,6 +607,90 @@ export function createLocalAdapter(): FluxDataProvider {
             return () => {
                 notificationSubscribers = notificationSubscribers.filter(cb => cb !== callback);
             };
+        },
+
+        // ==================
+        // Agent Operations
+        // ==================
+        async getAgentConversation(sessionId: string) {
+            const conversations = getFromStorage<AgentConversation[]>(STORAGE_KEYS.agentConversations, []);
+            return conversations.find(c => c.sessionId === sessionId) || null;
+        },
+
+        async saveAgentConversation(conversation) {
+            const conversations = getFromStorage<AgentConversation[]>(STORAGE_KEYS.agentConversations, []);
+            const now = new Date().toISOString();
+            const newConversation: AgentConversation = {
+                ...conversation,
+                id: generateId(),
+                createdAt: now,
+                updatedAt: now,
+            };
+            conversations.push(newConversation);
+            saveToStorage(STORAGE_KEYS.agentConversations, conversations);
+            return newConversation;
+        },
+
+        async updateAgentConversation(sessionId: string, messages) {
+            const conversations = getFromStorage<AgentConversation[]>(STORAGE_KEYS.agentConversations, []);
+            const index = conversations.findIndex(c => c.sessionId === sessionId);
+            if (index === -1) return null;
+            
+            conversations[index] = {
+                ...conversations[index],
+                messages,
+                updatedAt: new Date().toISOString(),
+            };
+            saveToStorage(STORAGE_KEYS.agentConversations, conversations);
+            return conversations[index];
+        },
+
+        async logAgentAction(action) {
+            const logs = getFromStorage<AgentActionLog[]>(STORAGE_KEYS.agentActionLogs, []);
+            const now = new Date().toISOString();
+            const newLog: AgentActionLog = {
+                ...action,
+                id: generateId(),
+                createdAt: now,
+            };
+            logs.push(newLog);
+            // Keep only last 1000 logs
+            if (logs.length > 1000) {
+                logs.shift();
+            }
+            saveToStorage(STORAGE_KEYS.agentActionLogs, logs);
+            return newLog;
+        },
+
+        async getAgentActionLog(sessionId: string, limit = 50) {
+            const logs = getFromStorage<AgentActionLog[]>(STORAGE_KEYS.agentActionLogs, []);
+            return logs
+                .filter(log => log.sessionId === sessionId)
+                .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+                .slice(0, limit);
+        },
+
+        async createEntityMapping(mapping) {
+            const mappings = getFromStorage<AgentEntityMapping[]>(STORAGE_KEYS.agentEntityMappings, []);
+            const now = new Date().toISOString();
+            const newMapping: AgentEntityMapping = {
+                ...mapping,
+                id: generateId(),
+                createdAt: now,
+            };
+            mappings.push(newMapping);
+            saveToStorage(STORAGE_KEYS.agentEntityMappings, mappings);
+            return newMapping;
+        },
+
+        async getEntityMappings(sourceType: string, sourceId: string) {
+            const mappings = getFromStorage<AgentEntityMapping[]>(STORAGE_KEYS.agentEntityMappings, []);
+            return mappings.filter(m => m.sourceType === sourceType && m.sourceId === sourceId);
+        },
+
+        async getEntityMappingsByTarget(targetType: string, targetId: string) {
+            const mappings = getFromStorage<AgentEntityMapping[]>(STORAGE_KEYS.agentEntityMappings, []);
+            return mappings.filter(m => m.targetType === targetType && m.targetId === targetId);
         },
     };
 }
