@@ -1,7 +1,34 @@
 // =====================================
 // FLUX - Gmail Integration Connector
-// Last Updated: 02:45:00 Dec 07, 2025
+// Last Updated: 00:46:31 Dec 08, 2025
 // =====================================
+// 
+// Gmail OAuth 2.0 XOAUTH2 Implementation
+// 
+// This connector implements Google's OAuth 2.0 XOAUTH2 protocol for IMAP/SMTP access.
+// 
+// SETUP REQUIREMENTS:
+// 1. Create OAuth 2.0 credentials in Google Cloud Console:
+//    - Go to https://console.cloud.google.com/apis/credentials
+//    - Create OAuth 2.0 Client ID (Web application)
+//    - Add authorized redirect URI: https://your-domain.com/app/appearance
+//    - Copy Client ID and Client Secret
+// 
+// 2. Set environment variables:
+//    - VITE_GOOGLE_CLIENT_ID=your-client-id
+//    - VITE_GOOGLE_CLIENT_SECRET=your-client-secret
+// 
+// 3. OAuth Scope:
+//    - Uses https://mail.google.com/ scope (required for IMAP/SMTP via XOAUTH2)
+//    - This scope provides full access to Gmail via IMAP, POP, and SMTP
+//    - According to Google's documentation, apps using this scope must comply with
+//      Google API Services: User Data Policy
+// 
+// XOAUTH2 AUTHENTICATION:
+// - Format: user=<email>\x01auth=Bearer <access_token>\x01\x01
+// - Base64-encoded and used with IMAP AUTHENTICATE, POP AUTH, or SMTP AUTH commands
+// - See: https://developers.google.com/workspace/gmail/imap/xoauth2-protocol
+//
 
 import type {
   OAuthTokens,
@@ -68,12 +95,13 @@ export class GmailConnector {
 
   /**
    * Generate OAuth authorization URL
+   * For IMAP/SMTP access, uses https://mail.google.com/ scope
+   * This scope allows full access to Gmail via IMAP, POP, and SMTP using XOAUTH2
    */
   static getAuthorizationUrl(config: GoogleOAuthConfig, state: string): string {
+    // Use IMAP/SMTP scope for XOAUTH2 access, or custom scopes if provided
     const scopes = config.scopes || [
-      'https://www.googleapis.com/auth/gmail.readonly',
-      'https://www.googleapis.com/auth/gmail.send',
-      'https://www.googleapis.com/auth/gmail.modify',
+      'https://mail.google.com/', // Required for IMAP/POP/SMTP access via XOAUTH2
       'https://www.googleapis.com/auth/userinfo.email',
       'https://www.googleapis.com/auth/userinfo.profile',
     ];
@@ -84,8 +112,8 @@ export class GmailConnector {
       response_type: 'code',
       scope: scopes.join(' '),
       state,
-      access_type: 'offline',
-      prompt: 'consent',
+      access_type: 'offline', // Required to get refresh token
+      prompt: 'consent', // Force consent screen to ensure refresh token
     });
 
     return `${GOOGLE_OAUTH_URL}?${params.toString()}`;
@@ -470,6 +498,67 @@ export class GmailConnector {
   }
 
   // ============================================
+  // XOAUTH2 Methods for IMAP/SMTP
+  // ============================================
+
+  /**
+   * Generate XOAUTH2 authentication string for IMAP/SMTP
+   * Format: user=<email>\x01auth=Bearer <access_token>\x01\x01
+   * This string is base64-encoded and used with AUTHENTICATE XOAUTH2 command
+   */
+  static generateXOAUTH2String(email: string, accessToken: string): string {
+    // Create the XOAUTH2 string according to Google's spec
+    const authString = `user=${email}\x01auth=Bearer ${accessToken}\x01\x01`;
+    // Base64 encode
+    return btoa(authString).replace(/\r\n/g, '');
+  }
+
+  /**
+   * Generate XOAUTH2 authentication string (instance method)
+   */
+  async generateXOAUTH2StringForEmail(email: string): Promise<string> {
+    // Ensure token is fresh
+    const token = await this.ensureValidToken();
+    return GmailConnector.generateXOAUTH2String(email, token);
+  }
+
+  /**
+   * Ensure access token is valid, refresh if needed
+   */
+  private async ensureValidToken(): Promise<string> {
+    // This would check expiration and refresh if needed
+    // For now, just return the current token
+    // In production, you'd check expiresAt and refresh if expired
+    return this.accessToken;
+  }
+
+  /**
+   * Get IMAP/SMTP connection info for Gmail
+   */
+  static getGmailConnectionInfo() {
+    return {
+      imap: {
+        host: 'imap.gmail.com',
+        port: 993,
+        secure: true, // Use TLS
+        authMethod: 'XOAUTH2',
+      },
+      smtp: {
+        host: 'smtp.gmail.com',
+        port: 587,
+        secure: false, // Use STARTTLS
+        authMethod: 'XOAUTH2',
+      },
+      pop3: {
+        host: 'pop.gmail.com',
+        port: 995,
+        secure: true, // Use TLS
+        authMethod: 'XOAUTH2',
+      },
+    };
+  }
+
+  // ============================================
   // Flux Integration Methods
   // ============================================
 
@@ -611,5 +700,5 @@ export class GmailConnector {
   }
 }
 
-// 02:45:00 Dec 07, 2025
+// 00:46:31 Dec 08, 2025
 

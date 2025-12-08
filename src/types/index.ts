@@ -25,7 +25,7 @@ export interface TerminalProps {
 
 // Tasks - Dynamic Workflow Statuses
 // Supports Agile, CCaaS (Contact Center), and ITSM workflows
-export type TaskStatus = 
+export type TaskStatus =
   // Agile Workflow
   | 'backlog'         // Product backlog - not yet refined
   | 'ready'           // Refined, ready for sprint
@@ -52,6 +52,16 @@ export type TaskStatus =
 
 export type TaskPriority = 'low' | 'medium' | 'high' | 'urgent';
 
+export type TaskRelationshipType = 'blocks' | 'is-blocked-by' | 'relates-to' | 'parent-of' | 'child-of' | 'duplicates' | 'is-duplicated-by';
+
+export interface TaskRelationship {
+  id: string;
+  sourceTaskId: string;
+  targetTaskId: string;
+  relationshipType: TaskRelationshipType;
+  createdAt: string;
+}
+
 export interface Task {
   id: string;
   title: string;
@@ -62,6 +72,12 @@ export interface Task {
   tags?: string[];
   dueDate?: string;
   projectId?: string;
+  parentTaskId?: string; // For subtasks
+  // New fields for Gap Closure
+  storyPoints?: number;
+  isVIP?: boolean;
+  acceptanceCriteria?: string[];
+  affectedServices?: string[];
   createdAt?: string;
   updatedAt?: string;
 }
@@ -75,6 +91,10 @@ export interface TaskCreateInput {
   tags?: string[];
   dueDate?: string;
   projectId?: string;
+  storyPoints?: number;
+  isVIP?: boolean;
+  acceptanceCriteria?: string[];
+  affectedServices?: string[];
 }
 
 export interface TaskUpdateInput {
@@ -85,6 +105,10 @@ export interface TaskUpdateInput {
   assignee?: string;
   tags?: string[];
   dueDate?: string;
+  storyPoints?: number;
+  isVIP?: boolean;
+  acceptanceCriteria?: string[];
+  affectedServices?: string[];
 }
 
 export interface Column {
@@ -354,6 +378,18 @@ export interface User {
   role: 'admin' | 'member' | 'viewer';
   avatar?: string;
   preferences?: Record<string, unknown>;
+  teamId?: string; // For team assignment
+  createdAt?: string;
+}
+
+// Team Management
+export interface Team {
+  id: string;
+  name: string;
+  description?: string;
+  memberIds: string[];
+  createdAt: string;
+  updatedAt: string;
 }
 
 // Projects
@@ -385,42 +421,42 @@ export type StorageMode = 'local' | 'supabase';
 // ==================
 
 export interface AgentConversation {
-    id: string;
-    userId: string;
-    sessionId: string;
-    messages: Array<{
-        role: 'user' | 'assistant' | 'system';
-        content: string;
-        timestamp: number;
-        toolsCalled?: string[];
-    }>;
-    createdAt: string;
-    updatedAt: string;
+  id: string;
+  userId: string;
+  sessionId: string;
+  messages: Array<{
+    role: 'user' | 'assistant' | 'system';
+    content: string;
+    timestamp: number;
+    toolsCalled?: string[];
+  }>;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface AgentActionLog {
-    id: string;
-    userId: string;
-    sessionId: string;
-    actionType: string;
-    inputParams: Record<string, unknown>;
-    result: {
-        success: boolean;
-        message: string;
-        data?: unknown;
-    };
-    verified: boolean;
-    createdAt: string;
+  id: string;
+  userId: string;
+  sessionId: string;
+  actionType: string;
+  inputParams: Record<string, unknown>;
+  result: {
+    success: boolean;
+    message: string;
+    data?: unknown;
+  };
+  verified: boolean;
+  createdAt: string;
 }
 
 export interface AgentEntityMapping {
-    id: string;
-    userId: string;
-    sourceType: 'email' | 'incident' | 'task' | 'sprint' | 'project';
-    sourceId: string;
-    targetType: 'email' | 'incident' | 'task' | 'sprint' | 'project';
-    targetId: string;
-    createdAt: string;
+  id: string;
+  userId: string;
+  sourceType: 'email' | 'incident' | 'task' | 'sprint' | 'project';
+  sourceId: string;
+  targetType: 'email' | 'incident' | 'task' | 'sprint' | 'project';
+  targetId: string;
+  createdAt: string;
 }
 
 // Email Inbox
@@ -435,33 +471,33 @@ export interface EmailAccount {
   provider: EmailProvider;
   emailAddress: string;
   displayName?: string;
-  
+
   // Connection settings
   smtpHost?: string;
   smtpPort?: number;
   smtpUsername?: string;
   smtpUseTls?: boolean;
-  
+
   imapHost?: string;
   imapPort?: number;
   imapUsername?: string;
   imapUseTls?: boolean;
-  
+
   // OAuth tokens
   oauthAccessToken?: string;
   oauthRefreshToken?: string;
   oauthTokenExpiresAt?: string;
-  
+
   // Sync settings
   syncEnabled: boolean;
   syncFrequencyMinutes: number;
   lastSyncedAt?: string;
-  
+
   // Status
   isActive: boolean;
   connectionStatus: ConnectionStatus;
   lastError?: string;
-  
+
   createdAt: string;
   updatedAt: string;
 }
@@ -477,12 +513,12 @@ export interface Email {
   id: string;
   tenantId: string;
   accountId: string;
-  
+
   // Email identifiers
   messageId?: string;
   inReplyTo?: string;
   threadId?: string;
-  
+
   // Basic fields
   fromAddress: string;
   fromName?: string;
@@ -492,29 +528,29 @@ export interface Email {
   subject: string;
   bodyText?: string;
   bodyHtml?: string;
-  
+
   // Metadata
   receivedAt: string;
   sentAt?: string;
   sizeBytes?: number;
-  
+
   // Flags
   isRead: boolean;
   isStarred: boolean;
   isArchived: boolean;
   isDeleted: boolean; // Local delete only
-  
+
   // Labels/Folders
   labels?: string[];
   folder: EmailFolder;
-  
+
   // Attachments
   attachments?: EmailAttachment[];
-  
+
   // Additional metadata
   headers?: Record<string, unknown>;
   metadata?: Record<string, unknown>;
-  
+
   createdAt: string;
   updatedAt: string;
 }
@@ -577,6 +613,76 @@ export interface EmailAccountCreateInput {
   oauthRefreshToken?: string;
   syncEnabled?: boolean;
   syncFrequencyMinutes?: number;
+}
+
+// ==================
+// Comments and Activity
+// ==================
+
+export interface Comment {
+  id: string;
+  taskId: string;
+  userId: string;
+  userName: string;
+  userAvatar?: string;
+  content: string;
+  isInternal: boolean; // Internal notes not visible to customers
+  createdAt: string;
+  updatedAt?: string;
+}
+
+export interface Activity {
+  id: string;
+  taskId: string;
+  userId: string;
+  userName: string;
+  action: 'created' | 'updated' | 'status_changed' | 'assigned' | 'commented' | 'due_date_set' | 'priority_changed';
+  details?: Record<string, unknown>;
+  createdAt: string;
+}
+
+export interface CommentCreateInput {
+  taskId: string;
+  content: string;
+  isInternal?: boolean;
+}
+
+// ==================
+// SLA and Time Tracking
+// ==================
+
+export interface SLAConfig {
+  id: string;
+  workflow: 'agile' | 'ccaas' | 'itsm';
+  priority: TaskPriority;
+  responseTimeMinutes: number; // Time to first response/acknowledgment
+  resolutionTimeMinutes: number; // Time to resolution
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface TimeEntry {
+  id: string;
+  taskId: string;
+  userId: string;
+  userName: string;
+  durationMinutes: number;
+  description?: string;
+  loggedAt: string;
+  createdAt: string;
+}
+
+export interface TimeEntryCreateInput {
+  taskId: string;
+  durationMinutes: number;
+  description?: string;
+  loggedAt?: string; // Defaults to now
+}
+
+export interface ActiveTimer {
+  taskId: string;
+  userId: string;
+  startTime: string;
 }
 
 // 21:11:22 Dec 06, 2025

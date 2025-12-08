@@ -245,7 +245,7 @@ Be helpful and execute actions immediately.`;
     if (!responseText && toolsCalled.length > 0) {
       responseText = `Executed ${toolsCalled.length} action(s). Please check the tool results above for details.`;
     }
-    
+
     return {
       response: responseText || 'I processed your request. If you expected a specific action, please check if it completed successfully.',
       toolsCalled,

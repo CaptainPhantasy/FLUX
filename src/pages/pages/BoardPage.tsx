@@ -42,7 +42,7 @@ export default function BoardPage() {
     const currentProject = projects.find(p => p.id === currentProjectId) || projects[0];
 
     return (
-        <div className="h-full flex flex-col">
+        <div className="h-full flex flex-col pt-12">
             {/* Header - Transparent / Clean */}
             <div className="flex flex-col gap-4 px-8 py-6">
                 {/* Workflow Selector - Pills Style */}

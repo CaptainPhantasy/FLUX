@@ -31,3 +31,6 @@ release/
 
 # Supabase local
 supabase/.temp/
+
+# Document Management (excluded by default - commit specific files when needed)
+Document Management/

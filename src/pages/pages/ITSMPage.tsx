@@ -31,7 +31,7 @@ export default function ITSMPage() {
     ];
 
     return (
-        <div className="p-8 max-w-7xl mx-auto space-y-8 min-h-screen">
+        <div className="p-8 pt-16 max-w-7xl mx-auto space-y-8 min-h-screen">
             
             {/* Header */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">

@@ -10,7 +10,10 @@ import { devtools, persist } from 'zustand/middleware';
 import { immer } from 'zustand/middleware/immer';
 import type {
     User,
+    Team,
     Task,
+    TaskRelationship,
+    TaskRelationshipType,
     TaskCreateInput,
     TaskUpdateInput,
     Notification,
@@ -27,7 +30,15 @@ import type {
     EmailAccountCreateInput,
     EmailLabel,
     EmailFolder,
+    Comment,
+    Activity,
+    CommentCreateInput,
+    SLAConfig,
+    TimeEntry,
+    TimeEntryCreateInput,
+    ActiveTimer,
 } from '@/types';
+import { applyAutoTriage, recordCorrection, type TriageResult } from '@/features/nanocoder/autotriage';
 import { getAdapter, initializeDb, isDbInitialized } from '@/lib/db';
 
 // ==================
@@ -37,12 +48,16 @@ import { getAdapter, initializeDb, isDbInitialized } from '@/lib/db';
 interface UserSlice {
     user: User | null;
     isAuthenticated: boolean;
+    // Team management
+    users: User[];
+    teams: Team[];
 }
 
 interface TaskSlice {
     tasks: Task[];
     selectedTaskId: string | null;
     isLoadingTasks: boolean;
+    taskRelationships: TaskRelationship[];
 }
 
 interface NotificationSlice {
@@ -74,6 +89,17 @@ interface EmailSlice {
     searchQuery: string;
     isLoadingEmails: boolean;
     unreadEmailCount: number;
+}
+
+interface CommentSlice {
+    comments: Comment[];
+    activities: Activity[];
+}
+
+interface SLASlice {
+    slaConfigs: SLAConfig[];
+    timeEntries: TimeEntry[];
+    activeTimer: ActiveTimer | null;
 }
 
 interface TerminalSlice {
@@ -112,7 +138,9 @@ interface FluxState extends
     EmailSlice,
     TerminalSlice,
     UISlice,
-    AppSlice { }
+    AppSlice,
+    CommentSlice,
+    SLASlice { }
 
 // ==================
 // Actions Types
@@ -127,6 +155,16 @@ interface FluxActions {
     setUser: (user: User | null) => void;
     updateUserPreferences: (preferences: Partial<User['preferences']>) => Promise<void>;
     logout: () => void;
+    
+    // Team Management Actions
+    fetchUsers: () => Promise<void>;
+    createUser: (user: Omit<User, 'id' | 'createdAt'>) => Promise<User | null>;
+    updateUser: (id: string, data: Partial<User>) => Promise<User | null>;
+    deleteUser: (id: string) => Promise<boolean>;
+    fetchTeams: () => Promise<void>;
+    createTeam: (team: Omit<Team, 'id' | 'createdAt' | 'updatedAt'>) => Promise<Team | null>;
+    updateTeam: (id: string, data: Partial<Team>) => Promise<Team | null>;
+    deleteTeam: (id: string) => Promise<boolean>;
 
     // Task Actions
     fetchTasks: (projectId?: string) => Promise<void>;
@@ -137,6 +175,15 @@ interface FluxActions {
     moveTask: (taskId: string, newStatus: Task['status'], newOrder?: number) => Promise<void>;
     archiveTasks: (ids: string[]) => Promise<void>;
     selectTask: (id: string | null) => void;
+    
+    // Task Relationship Actions
+    fetchTaskRelationships: (taskId?: string) => Promise<void>;
+    linkTasks: (sourceTaskId: string, targetTaskId: string, relationshipType: TaskRelationshipType) => Promise<TaskRelationship | null>;
+    unlinkTasks: (relationshipId: string) => Promise<boolean>;
+    getBlockers: (taskId: string) => Promise<Task[]>;
+    getBlockedBy: (taskId: string) => Promise<Task[]>;
+    getSubtasks: (taskId: string) => Promise<Task[]>;
+    createSubtask: (parentTaskId: string, input: TaskCreateInput) => Promise<Task | null>;
 
     // Notification Actions
     fetchNotifications: () => Promise<void>;
@@ -207,6 +254,27 @@ interface FluxActions {
     setWorkflowMode: (mode: 'agile' | 'ccaas' | 'itsm') => void;
     setSelectedIncidentId: (id: string | null) => void;
 
+    // Comment Actions
+    fetchComments: (taskId: string) => Promise<void>;
+    addComment: (input: CommentCreateInput) => Promise<Comment | null>;
+    updateComment: (id: string, content: string) => Promise<Comment | null>;
+    deleteComment: (id: string) => Promise<boolean>;
+    getActivity: (taskId: string) => Promise<Activity[]>;
+
+    // SLA and Time Tracking Actions
+    fetchSLAConfigs: () => Promise<void>;
+    createSLAConfig: (config: Omit<SLAConfig, 'id' | 'createdAt' | 'updatedAt'>) => Promise<SLAConfig | null>;
+    updateSLAConfig: (id: string, data: Partial<SLAConfig>) => Promise<SLAConfig | null>;
+    deleteSLAConfig: (id: string) => Promise<boolean>;
+    
+    fetchTimeEntries: (taskId?: string) => Promise<void>;
+    logTime: (input: TimeEntryCreateInput) => Promise<TimeEntry | null>;
+    updateTimeEntry: (id: string, data: Partial<TimeEntry>) => Promise<TimeEntry | null>;
+    deleteTimeEntry: (id: string) => Promise<boolean>;
+    startTimer: (taskId: string) => Promise<void>;
+    stopTimer: () => Promise<TimeEntry | null>;
+    getActiveTimer: () => ActiveTimer | null;
+
     // Error handling
     setError: (error: string | null) => void;
     clearError: () => void;
@@ -220,11 +288,14 @@ const initialState: FluxState = {
     // User
     user: null,
     isAuthenticated: false,
+    users: [],
+    teams: [],
 
     // Tasks
     tasks: [],
     selectedTaskId: null,
     isLoadingTasks: false,
+    taskRelationships: [],
 
     // Notifications
     notifications: [],
@@ -273,6 +344,15 @@ const initialState: FluxState = {
     isInitialized: false,
     isLoading: false,
     error: null,
+
+    // Comments
+    comments: [],
+    activities: [],
+
+    // SLA and Time Tracking
+    slaConfigs: [],
+    timeEntries: [],
+    activeTimer: null,
 };
 
 // ==================
@@ -302,7 +382,7 @@ export const useFluxStore = create<FluxState & FluxActions>()(
                         const db = getAdapter(storageMode);
 
                         // Fetch initial data in parallel
-                        const [user, tasks, notifications, projects, integrations, emailAccounts, unreadEmailCount] = await Promise.all([
+                        const [user, tasks, notifications, projects, integrations, emailAccounts, unreadEmailCount, users, teams] = await Promise.all([
                             db.getCurrentUser(),
                             db.getTasks(),
                             db.getNotifications(),
@@ -310,6 +390,8 @@ export const useFluxStore = create<FluxState & FluxActions>()(
                             db.getIntegrations(),
                             db.getEmailAccounts().catch(() => []),
                             db.getUnreadEmailCount().catch(() => 0),
+                            db.getUsers().catch(() => []),
+                            db.getTeams().catch(() => []),
                         ]);
 
                         set((state) => {
@@ -322,6 +404,8 @@ export const useFluxStore = create<FluxState & FluxActions>()(
                             state.integrations = integrations;
                             state.emailAccounts = emailAccounts;
                             state.unreadEmailCount = unreadEmailCount;
+                            state.users = users;
+                            state.teams = teams;
                             state.config.storageMode = storageMode;
                             state.config.isSetupComplete = true;
                             state.isInitialized = true;
@@ -402,6 +486,144 @@ export const useFluxStore = create<FluxState & FluxActions>()(
                 },
 
                 // ==================
+                // Team Management Actions
+                // ==================
+                fetchUsers: async () => {
+                    if (!isDbInitialized()) return;
+                    
+                    const db = getAdapter(get().config.storageMode);
+                    if (db.getUsers) {
+                        const users = await db.getUsers();
+                        set((state) => {
+                            state.users = users;
+                        });
+                    }
+                },
+
+                createUser: async (userData) => {
+                    if (!isDbInitialized()) return null;
+                    
+                    const db = getAdapter(get().config.storageMode);
+                    if (db.createUser) {
+                        const user = await db.createUser(userData);
+                        if (user) {
+                            set((state) => {
+                                state.users.push(user);
+                            });
+                        }
+                        return user;
+                    }
+                    return null;
+                },
+
+                updateUser: async (id, data) => {
+                    if (!isDbInitialized()) return null;
+                    
+                    const db = getAdapter(get().config.storageMode);
+                    if (db.updateUser) {
+                        const updated = await db.updateUser(id, data);
+                        if (updated) {
+                            set((state) => {
+                                const index = state.users.findIndex(u => u.id === id);
+                                if (index !== -1) {
+                                    state.users[index] = updated;
+                                }
+                                // Update current user if it's the same
+                                if (state.user?.id === id) {
+                                    state.user = updated;
+                                }
+                            });
+                        }
+                        return updated;
+                    }
+                    return null;
+                },
+
+                deleteUser: async (id) => {
+                    if (!isDbInitialized()) return false;
+                    
+                    const db = getAdapter(get().config.storageMode);
+                    if (db.deleteUser) {
+                        const success = await db.deleteUser(id);
+                        if (success) {
+                            set((state) => {
+                                state.users = state.users.filter(u => u.id !== id);
+                                // Logout if deleting current user
+                                if (state.user?.id === id) {
+                                    state.user = null;
+                                    state.isAuthenticated = false;
+                                }
+                            });
+                        }
+                        return success;
+                    }
+                    return false;
+                },
+
+                fetchTeams: async () => {
+                    if (!isDbInitialized()) return;
+                    
+                    const db = getAdapter(get().config.storageMode);
+                    if (db.getTeams) {
+                        const teams = await db.getTeams();
+                        set((state) => {
+                            state.teams = teams;
+                        });
+                    }
+                },
+
+                createTeam: async (teamData) => {
+                    if (!isDbInitialized()) return null;
+                    
+                    const db = getAdapter(get().config.storageMode);
+                    if (db.createTeam) {
+                        const team = await db.createTeam(teamData);
+                        if (team) {
+                            set((state) => {
+                                state.teams.push(team);
+                            });
+                        }
+                        return team;
+                    }
+                    return null;
+                },
+
+                updateTeam: async (id, data) => {
+                    if (!isDbInitialized()) return null;
+                    
+                    const db = getAdapter(get().config.storageMode);
+                    if (db.updateTeam) {
+                        const updated = await db.updateTeam(id, data);
+                        if (updated) {
+                            set((state) => {
+                                const index = state.teams.findIndex(t => t.id === id);
+                                if (index !== -1) {
+                                    state.teams[index] = updated;
+                                }
+                            });
+                        }
+                        return updated;
+                    }
+                    return null;
+                },
+
+                deleteTeam: async (id) => {
+                    if (!isDbInitialized()) return false;
+                    
+                    const db = getAdapter(get().config.storageMode);
+                    if (db.deleteTeam) {
+                        const success = await db.deleteTeam(id);
+                        if (success) {
+                            set((state) => {
+                                state.teams = state.teams.filter(t => t.id !== id);
+                            });
+                        }
+                        return success;
+                    }
+                    return false;
+                },
+
+                // ==================
                 // Task Actions
                 // ==================
                 fetchTasks: async (projectId) => {
@@ -426,16 +648,22 @@ export const useFluxStore = create<FluxState & FluxActions>()(
 
                     // Defensive check: Verify authentication for Supabase storage mode
                     // Note: Routes should be protected, but this handles session expiration during use
-                    const { config, isAuthenticated } = get();
+                    const { config, isAuthenticated, workflowMode } = get();
                     if (config.storageMode === 'supabase' && !isAuthenticated) {
                         console.error('[FluxStore] Cannot create task: User not authenticated (required for Supabase). Session may have expired.');
                         return null;
                     }
 
+                    // Apply auto-triage if enabled
+                    const triagedInput = applyAutoTriage(
+                        input,
+                        (workflowMode as 'agile' | 'ccaas' | 'itsm') || 'agile'
+                    );
+
                     const db = getAdapter(config.storageMode);
 
                     try {
-                        const task = await db.createTask(input);
+                        const task = await db.createTask(triagedInput);
                         // Subscription will update state automatically
                         return task;
                     } catch (error) {
@@ -476,14 +704,14 @@ export const useFluxStore = create<FluxState & FluxActions>()(
                     });
 
                     try {
-                        const updated = await db.updateTask(id, data);
+                    const updated = await db.updateTask(id, data);
 
-                        if (!updated) {
-                            // Rollback on failure
-                            await get().fetchTasks();
-                        }
+                    if (!updated) {
+                        // Rollback on failure
+                        await get().fetchTasks();
+                    }
 
-                        return updated;
+                    return updated;
                     } catch (error) {
                         console.error('[FluxStore] Failed to update task:', error);
                         // Rollback on failure
@@ -544,7 +772,7 @@ export const useFluxStore = create<FluxState & FluxActions>()(
                     });
 
                     try {
-                        await db.updateTaskOrder(taskId, newOrder || 0, newStatus);
+                    await db.updateTaskOrder(taskId, newOrder || 0, newStatus);
                     } catch (error) {
                         console.error('[FluxStore] Failed to move task:', error);
                         // Rollback on failure
@@ -1148,6 +1376,423 @@ export const useFluxStore = create<FluxState & FluxActions>()(
                     set((state) => {
                         state.terminalHistory = [];
                     });
+                },
+
+                // ==================
+                // Comment Actions
+                // ==================
+                fetchComments: async (taskId) => {
+                    if (!isDbInitialized()) return;
+                    
+                    const db = getAdapter(get().config.storageMode);
+                    if (db.getComments) {
+                        const comments = await db.getComments(taskId);
+                        set((state) => {
+                            // Update comments for this task
+                            state.comments = [
+                                ...state.comments.filter(c => c.taskId !== taskId),
+                                ...comments,
+                            ];
+                        });
+                    }
+                },
+
+                addComment: async (input) => {
+                    if (!isDbInitialized()) return null;
+                    
+                    const { user } = get();
+                    if (!user) {
+                        console.error('[FluxStore] Cannot add comment: No user logged in');
+                        return null;
+                    }
+
+                    const db = getAdapter(get().config.storageMode);
+                    if (db.createComment) {
+                        const comment = await db.createComment({
+                            ...input,
+                            userId: user.id,
+                            userName: user.name,
+                            userAvatar: user.avatar,
+                        });
+                        
+                        if (comment) {
+                            set((state) => {
+                                state.comments.push(comment);
+                            });
+                            
+                            // Log activity
+                            if (db.logActivity) {
+                                await db.logActivity({
+                                    taskId: input.taskId,
+                                    userId: user.id,
+                                    userName: user.name,
+                                    action: 'commented',
+                                    details: { commentId: comment.id, isInternal: input.isInternal || false },
+                                });
+                            }
+                        }
+                        
+                        return comment;
+                    }
+                    return null;
+                },
+
+                updateComment: async (id, content) => {
+                    if (!isDbInitialized()) return null;
+                    
+                    const db = getAdapter(get().config.storageMode);
+                    if (db.updateComment) {
+                        const updated = await db.updateComment(id, content);
+                        if (updated) {
+                            set((state) => {
+                                const index = state.comments.findIndex(c => c.id === id);
+                                if (index !== -1) {
+                                    state.comments[index] = updated;
+                                }
+                            });
+                        }
+                        return updated;
+                    }
+                    return null;
+                },
+
+                deleteComment: async (id) => {
+                    if (!isDbInitialized()) return false;
+                    
+                    const db = getAdapter(get().config.storageMode);
+                    if (db.deleteComment) {
+                        const success = await db.deleteComment(id);
+                        if (success) {
+                            set((state) => {
+                                state.comments = state.comments.filter(c => c.id !== id);
+                            });
+                        }
+                        return success;
+                    }
+                    return false;
+                },
+
+                getActivity: async (taskId) => {
+                    if (!isDbInitialized()) return [];
+                    
+                    const db = getAdapter(get().config.storageMode);
+                    if (db.getActivity) {
+                        const activities = await db.getActivity(taskId);
+                        set((state) => {
+                            // Update activities for this task
+                            state.activities = [
+                                ...state.activities.filter(a => a.taskId !== taskId),
+                                ...activities,
+                            ];
+                        });
+                        return activities;
+                    }
+                    return [];
+                },
+
+                // ==================
+                // Task Relationship Actions
+                // ==================
+                fetchTaskRelationships: async (taskId) => {
+                    if (!isDbInitialized()) return;
+                    
+                    const db = getAdapter(get().config.storageMode);
+                    if (db.getTaskRelationships) {
+                        const relationships = await db.getTaskRelationships(taskId);
+                        set((state) => {
+                            if (taskId) {
+                                // Update relationships for specific task
+                                state.taskRelationships = [
+                                    ...state.taskRelationships.filter(r => 
+                                        r.sourceTaskId !== taskId && r.targetTaskId !== taskId
+                                    ),
+                                    ...relationships,
+                                ];
+                            } else {
+                                // Update all relationships
+                                state.taskRelationships = relationships;
+                            }
+                        });
+                    }
+                },
+
+                linkTasks: async (sourceTaskId, targetTaskId, relationshipType) => {
+                    if (!isDbInitialized()) return null;
+                    
+                    const db = getAdapter(get().config.storageMode);
+                    if (db.createTaskRelationship) {
+                        const relationship = await db.createTaskRelationship({
+                            sourceTaskId,
+                            targetTaskId,
+                            relationshipType,
+                        });
+                        
+                        if (relationship) {
+                            set((state) => {
+                                state.taskRelationships.push(relationship);
+                            });
+                        }
+                        
+                        return relationship;
+                    }
+                    return null;
+                },
+
+                unlinkTasks: async (relationshipId) => {
+                    if (!isDbInitialized()) return false;
+                    
+                    const db = getAdapter(get().config.storageMode);
+                    if (db.deleteTaskRelationship) {
+                        const success = await db.deleteTaskRelationship(relationshipId);
+                        if (success) {
+                            set((state) => {
+                                state.taskRelationships = state.taskRelationships.filter(r => r.id !== relationshipId);
+                            });
+                        }
+                        return success;
+                    }
+                    return false;
+                },
+
+                getBlockers: async (taskId) => {
+                    const relationships = get().taskRelationships;
+                    const blockers = relationships
+                        .filter(r => r.targetTaskId === taskId && r.relationshipType === 'blocks')
+                        .map(r => get().tasks.find(t => t.id === r.sourceTaskId))
+                        .filter((t): t is Task => t !== undefined);
+                    return blockers;
+                },
+
+                getBlockedBy: async (taskId) => {
+                    const relationships = get().taskRelationships;
+                    const blockedBy = relationships
+                        .filter(r => r.sourceTaskId === taskId && r.relationshipType === 'blocks')
+                        .map(r => get().tasks.find(t => t.id === r.targetTaskId))
+                        .filter((t): t is Task => t !== undefined);
+                    return blockedBy;
+                },
+
+                getSubtasks: async (taskId) => {
+                    return get().tasks.filter(t => t.parentTaskId === taskId);
+                },
+
+                createSubtask: async (parentTaskId, input) => {
+                    if (!isDbInitialized()) return null;
+                    
+                    const subtask = await get().createTask({
+                        ...input,
+                        parentTaskId,
+                    });
+                    
+                    return subtask;
+                },
+
+                // ==================
+                // SLA and Time Tracking Actions
+                // ==================
+                fetchSLAConfigs: async () => {
+                    if (!isDbInitialized()) return;
+                    
+                    const db = getAdapter(get().config.storageMode);
+                    if (db.getSLAConfigs) {
+                        const configs = await db.getSLAConfigs();
+                        set((state) => {
+                            state.slaConfigs = configs;
+                        });
+                    }
+                },
+
+                createSLAConfig: async (configData) => {
+                    if (!isDbInitialized()) return null;
+                    
+                    const db = getAdapter(get().config.storageMode);
+                    if (db.createSLAConfig) {
+                        const config = await db.createSLAConfig(configData);
+                        if (config) {
+                            set((state) => {
+                                state.slaConfigs.push(config);
+                            });
+                        }
+                        return config;
+                    }
+                    return null;
+                },
+
+                updateSLAConfig: async (id, data) => {
+                    if (!isDbInitialized()) return null;
+                    
+                    const db = getAdapter(get().config.storageMode);
+                    if (db.updateSLAConfig) {
+                        const updated = await db.updateSLAConfig(id, data);
+                        if (updated) {
+                            set((state) => {
+                                const index = state.slaConfigs.findIndex(c => c.id === id);
+                                if (index !== -1) {
+                                    state.slaConfigs[index] = updated;
+                                }
+                            });
+                        }
+                        return updated;
+                    }
+                    return null;
+                },
+
+                deleteSLAConfig: async (id) => {
+                    if (!isDbInitialized()) return false;
+                    
+                    const db = getAdapter(get().config.storageMode);
+                    if (db.deleteSLAConfig) {
+                        const success = await db.deleteSLAConfig(id);
+                        if (success) {
+                            set((state) => {
+                                state.slaConfigs = state.slaConfigs.filter(c => c.id !== id);
+                            });
+                        }
+                        return success;
+                    }
+                    return false;
+                },
+
+                fetchTimeEntries: async (taskId) => {
+                    if (!isDbInitialized()) return;
+                    
+                    const db = getAdapter(get().config.storageMode);
+                    if (db.getTimeEntries) {
+                        const entries = await db.getTimeEntries(taskId);
+                        set((state) => {
+                            if (taskId) {
+                                // Update entries for specific task
+                                state.timeEntries = [
+                                    ...state.timeEntries.filter(e => e.taskId !== taskId),
+                                    ...entries,
+                                ];
+                            } else {
+                                // Update all entries
+                                state.timeEntries = entries;
+                            }
+                        });
+                    }
+                },
+
+                logTime: async (input) => {
+                    if (!isDbInitialized()) return null;
+                    
+                    const { user } = get();
+                    if (!user) {
+                        console.error('[FluxStore] Cannot log time: No user logged in');
+                        return null;
+                    }
+
+                    const db = getAdapter(get().config.storageMode);
+                    if (db.createTimeEntry) {
+                        const entry = await db.createTimeEntry({
+                            ...input,
+                            userId: user.id,
+                            userName: user.name,
+                            loggedAt: input.loggedAt || new Date().toISOString(),
+                        });
+                        
+                        if (entry) {
+                            set((state) => {
+                                state.timeEntries.push(entry);
+                            });
+                        }
+                        
+                        return entry;
+                    }
+                    return null;
+                },
+
+                updateTimeEntry: async (id, data) => {
+                    if (!isDbInitialized()) return null;
+                    
+                    const db = getAdapter(get().config.storageMode);
+                    if (db.updateTimeEntry) {
+                        const updated = await db.updateTimeEntry(id, data);
+                        if (updated) {
+                            set((state) => {
+                                const index = state.timeEntries.findIndex(e => e.id === id);
+                                if (index !== -1) {
+                                    state.timeEntries[index] = updated;
+                                }
+                            });
+                        }
+                        return updated;
+                    }
+                    return null;
+                },
+
+                deleteTimeEntry: async (id) => {
+                    if (!isDbInitialized()) return false;
+                    
+                    const db = getAdapter(get().config.storageMode);
+                    if (db.deleteTimeEntry) {
+                        const success = await db.deleteTimeEntry(id);
+                        if (success) {
+                            set((state) => {
+                                state.timeEntries = state.timeEntries.filter(e => e.id !== id);
+                            });
+                        }
+                        return success;
+                    }
+                    return false;
+                },
+
+                startTimer: async (taskId) => {
+                    const { user, activeTimer } = get();
+                    if (!user) {
+                        console.error('[FluxStore] Cannot start timer: No user logged in');
+                        return;
+                    }
+
+                    // Stop existing timer if any
+                    if (activeTimer) {
+                        await get().stopTimer();
+                    }
+
+                    set((state) => {
+                        state.activeTimer = {
+                            taskId,
+                            userId: user.id,
+                            startTime: new Date().toISOString(),
+                        };
+                    });
+                },
+
+                stopTimer: async () => {
+                    const { activeTimer, user } = get();
+                    if (!activeTimer || !user) {
+                        return null;
+                    }
+
+                    const startTime = new Date(activeTimer.startTime);
+                    const endTime = new Date();
+                    const durationMinutes = Math.floor((endTime.getTime() - startTime.getTime()) / (1000 * 60));
+
+                    if (durationMinutes > 0) {
+                        const entry = await get().logTime({
+                            taskId: activeTimer.taskId,
+                            durationMinutes,
+                            description: 'Timer session',
+                            loggedAt: startTime.toISOString(),
+                        });
+
+                        set((state) => {
+                            state.activeTimer = null;
+                        });
+
+                        return entry;
+                    }
+
+                    set((state) => {
+                        state.activeTimer = null;
+                    });
+
+                    return null;
+                },
+
+                getActiveTimer: () => {
+                    return get().activeTimer;
                 },
 
                 // ==================

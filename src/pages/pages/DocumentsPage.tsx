@@ -154,7 +154,7 @@ export default function DocumentsPage() {
 
     return (
         <div 
-            className="min-h-screen p-8 max-w-7xl mx-auto"
+            className="min-h-screen p-8 pt-16 max-w-7xl mx-auto"
             onDragOver={(e) => e.preventDefault()}
             onDrop={handleDrop}
         >

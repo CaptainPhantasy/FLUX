@@ -121,7 +121,7 @@ export default function AnalyticsPage() {
     };
 
     return (
-        <div className="min-h-screen p-8 max-w-7xl mx-auto">
+        <div className="min-h-screen p-8 pt-16 max-w-7xl mx-auto">
             <header className="mb-10 flex items-center justify-between">
                 <div>
                     <div className="flex items-center gap-3 mb-2">

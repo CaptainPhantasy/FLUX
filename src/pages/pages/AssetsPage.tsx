@@ -154,7 +154,7 @@ export default function AssetsPage() {
     });
 
     return (
-        <div className="h-full flex flex-col p-8">
+        <div className="h-full flex flex-col p-8 pt-16">
             {/* Header */}
             <div className="flex items-center justify-between mb-8">
                 <div>

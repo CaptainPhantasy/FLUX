@@ -8,7 +8,13 @@
 import type { FluxDataProvider } from '../types';
 import type {
     User,
+    Team,
     Task,
+    TaskRelationship,
+    TaskRelationshipType,
+    Comment,
+    Activity,
+    CommentCreateInput,
     TaskCreateInput,
     TaskUpdateInput,
     Notification,
@@ -18,18 +24,28 @@ import type {
     AgentConversation,
     AgentActionLog,
     AgentEntityMapping,
+    SLAConfig,
+    TimeEntry,
+    TimeEntryCreateInput,
 } from '@/types';
 
 const STORAGE_KEYS = {
     user: 'flux_user',
+    users: 'flux_users',
+    teams: 'flux_teams',
     tasks: 'flux_tasks',
     notifications: 'flux_notifications',
     projects: 'flux_projects',
     assets: 'flux_assets',
     integrations: 'flux_integrations',
+    comments: 'flux_comments',
+    activities: 'flux_activities',
+    taskRelationships: 'flux_task_relationships',
     agentConversations: 'flux_agent_conversations',
     agentActionLogs: 'flux_agent_action_logs',
     agentEntityMappings: 'flux_agent_entity_mappings',
+    slaConfigs: 'flux_sla_configs',
+    timeEntries: 'flux_time_entries',
 } as const;
 
 // Utility functions
@@ -66,7 +82,62 @@ const INITIAL_USER: User = {
         sidebarCollapsed: false,
         notificationsEnabled: true,
     },
+    createdAt: new Date().toISOString(),
 };
+
+const INITIAL_USERS: User[] = [
+    {
+        id: 'u1',
+        name: 'Alice Chen',
+        email: 'alice@flux.local',
+        avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=alice',
+        role: 'member',
+        createdAt: new Date().toISOString(),
+    },
+    {
+        id: 'u2',
+        name: 'Bob Rivera',
+        email: 'bob@flux.local',
+        avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=bob',
+        role: 'member',
+        createdAt: new Date().toISOString(),
+    },
+    {
+        id: 'u3',
+        name: 'Sarah Johnson',
+        email: 'sarah@flux.local',
+        avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=sarah',
+        role: 'member',
+        createdAt: new Date().toISOString(),
+    },
+    {
+        id: 'u4',
+        name: 'Mike Chen',
+        email: 'mike@flux.local',
+        avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=mike',
+        role: 'member',
+        createdAt: new Date().toISOString(),
+    },
+];
+
+const INITIAL_TEAMS: Team[] = [
+    {
+        id: 'team-1',
+        name: 'Engineering',
+        description: 'Software engineering team',
+        memberIds: ['u1', 'u2'],
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+    },
+    {
+        id: 'team-2',
+        name: 'Support',
+        description: 'Customer support team',
+        memberIds: ['u3', 'u4'],
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+    },
+];
 
 const INITIAL_TASKS: Task[] = [
     {
@@ -247,6 +318,98 @@ export function createLocalAdapter(): FluxDataProvider {
         },
 
         // ==================
+        // Team Management Operations
+        // ==================
+        async getUsers(): Promise<User[]> {
+            return getFromStorage<User[]>(STORAGE_KEYS.users, INITIAL_USERS);
+        },
+
+        async getUserById(id: string): Promise<User | null> {
+            const users = await this.getUsers();
+            return users.find(u => u.id === id) || null;
+        },
+
+        async createUser(userData): Promise<User> {
+            const users = await this.getUsers();
+            const newUser: User = {
+                ...userData,
+                id: generateId(),
+                createdAt: new Date().toISOString(),
+            };
+            users.push(newUser);
+            saveToStorage(STORAGE_KEYS.users, users);
+            return newUser;
+        },
+
+        async updateUser(id: string, data: Partial<User>): Promise<User | null> {
+            const users = await this.getUsers();
+            const index = users.findIndex(u => u.id === id);
+            if (index === -1) return null;
+
+            users[index] = {
+                ...users[index],
+                ...data,
+            };
+            saveToStorage(STORAGE_KEYS.users, users);
+            return users[index];
+        },
+
+        async deleteUser(id: string): Promise<boolean> {
+            const users = await this.getUsers();
+            const filtered = users.filter(u => u.id !== id);
+            if (filtered.length === users.length) return false;
+
+            saveToStorage(STORAGE_KEYS.users, filtered);
+            return true;
+        },
+
+        async getTeams(): Promise<Team[]> {
+            return getFromStorage<Team[]>(STORAGE_KEYS.teams, INITIAL_TEAMS);
+        },
+
+        async getTeamById(id: string): Promise<Team | null> {
+            const teams = await this.getTeams();
+            return teams.find(t => t.id === id) || null;
+        },
+
+        async createTeam(teamData): Promise<Team> {
+            const teams = await this.getTeams();
+            const now = new Date().toISOString();
+            const newTeam: Team = {
+                ...teamData,
+                id: generateId(),
+                createdAt: now,
+                updatedAt: now,
+            };
+            teams.push(newTeam);
+            saveToStorage(STORAGE_KEYS.teams, teams);
+            return newTeam;
+        },
+
+        async updateTeam(id: string, data: Partial<Team>): Promise<Team | null> {
+            const teams = await this.getTeams();
+            const index = teams.findIndex(t => t.id === id);
+            if (index === -1) return null;
+
+            teams[index] = {
+                ...teams[index],
+                ...data,
+                updatedAt: new Date().toISOString(),
+            };
+            saveToStorage(STORAGE_KEYS.teams, teams);
+            return teams[index];
+        },
+
+        async deleteTeam(id: string): Promise<boolean> {
+            const teams = await this.getTeams();
+            const filtered = teams.filter(t => t.id !== id);
+            if (filtered.length === teams.length) return false;
+
+            saveToStorage(STORAGE_KEYS.teams, filtered);
+            return true;
+        },
+
+        // ==================
         // Task Operations
         // ==================
         async getTasks(projectId?): Promise<Task[]> {
@@ -274,6 +437,10 @@ export function createLocalAdapter(): FluxDataProvider {
                 tags: input.tags || [],
                 dueDate: input.dueDate,
                 projectId: input.projectId,
+                storyPoints: input.storyPoints,
+                isVIP: input.isVIP,
+                acceptanceCriteria: input.acceptanceCriteria,
+                affectedServices: input.affectedServices,
                 createdAt: now,
                 updatedAt: now,
                 order: tasks.filter(t => t.status === (input.status || 'todo')).length,
@@ -567,11 +734,120 @@ export function createLocalAdapter(): FluxDataProvider {
         },
 
         // ==================
+        // Email Account Operations (stub implementation for local mode)
+        // ==================
+        async getEmailAccounts() {
+            // Local mode doesn't support email accounts - return empty array
+            return [];
+        },
+
+        async getEmailAccountById(_id: string) {
+            return null;
+        },
+
+        async createEmailAccount(_input: unknown) {
+            throw new Error('Email accounts not supported in local storage mode');
+        },
+
+        async updateEmailAccount(_id: string, _data: unknown) {
+            return null;
+        },
+
+        async deleteEmailAccount(_id: string) {
+            return false;
+        },
+
+        async syncEmailAccount(_id: string) {
+            return false;
+        },
+
+        async testEmailAccountConnection(_id: string) {
+            return { success: false, error: 'Email not supported in local mode' };
+        },
+
+        // ==================
+        // Email Operations (stub implementation for local mode)
+        // ==================
+        async getEmails(_accountId?: string, _folder?: unknown, _limit?: number, _offset?: number) {
+            // Local mode doesn't support emails - return empty array
+            return [];
+        },
+
+        async getEmailById(_id: string) {
+            return null;
+        },
+
+        async searchEmails(_query: string, _folder?: unknown, _limit?: number) {
+            return [];
+        },
+
+        async createEmail(_input: unknown) {
+            throw new Error('Email not supported in local storage mode');
+        },
+
+        async updateEmail(_id: string, _data: unknown) {
+            return null;
+        },
+
+        async deleteEmail(_id: string) {
+            return false;
+        },
+
+        async markEmailRead(_id: string, _isRead: boolean) {
+            return null;
+        },
+
+        async markEmailStarred(_id: string, _isStarred: boolean) {
+            return null;
+        },
+
+        async archiveEmail(_id: string, _isArchived: boolean) {
+            return null;
+        },
+
+        async moveEmailToFolder(_id: string, _folder: unknown) {
+            return null;
+        },
+
+        async getUnreadEmailCount() {
+            return 0;
+        },
+
+        // ==================
+        // Email Label Operations (stub implementation for local mode)
+        // ==================
+        async getEmailLabels() {
+            return [];
+        },
+
+        async createEmailLabel(_name: string, _color?: string) {
+            throw new Error('Email labels not supported in local storage mode');
+        },
+
+        async updateEmailLabel(_id: string, _data: unknown) {
+            return null;
+        },
+
+        async deleteEmailLabel(_id: string) {
+            return false;
+        },
+
+        async addLabelToEmail(_emailId: string, _labelId: string) {
+            return false;
+        },
+
+        async removeLabelFromEmail(_emailId: string, _labelId: string) {
+            return false;
+        },
+
+        // ==================
         // Lifecycle
         // ==================
         async initialize(): Promise<void> {
             // Check if this is first run and seed initial data
             const user = getFromStorage<User | null>(STORAGE_KEYS.user, null);
+            const users = getFromStorage<User[]>(STORAGE_KEYS.users, []);
+            const teams = getFromStorage<Team[]>(STORAGE_KEYS.teams, []);
 
             if (!user) {
                 // First run - seed with initial data
@@ -583,6 +859,16 @@ export function createLocalAdapter(): FluxDataProvider {
                 console.log('[LocalAdapter] Initialized with seed data');
             } else {
                 console.log('[LocalAdapter] Loaded existing data');
+            }
+
+            // Always seed users and teams if they don't exist
+            if (users.length === 0) {
+                saveToStorage(STORAGE_KEYS.users, INITIAL_USERS);
+                console.log('[LocalAdapter] Seeded initial users');
+            }
+            if (teams.length === 0) {
+                saveToStorage(STORAGE_KEYS.teams, INITIAL_TEAMS);
+                console.log('[LocalAdapter] Seeded initial teams');
             }
         },
 
@@ -607,6 +893,224 @@ export function createLocalAdapter(): FluxDataProvider {
             return () => {
                 notificationSubscribers = notificationSubscribers.filter(cb => cb !== callback);
             };
+        },
+
+        // ==================
+        // Comment Operations
+        // ==================
+        async getComments(taskId: string): Promise<Comment[]> {
+            const comments = getFromStorage<Comment[]>(STORAGE_KEYS.comments, []);
+            return comments.filter(c => c.taskId === taskId).sort((a, b) =>
+                new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+            );
+        },
+
+        async createComment(input): Promise<Comment> {
+            const comments = getFromStorage<Comment[]>(STORAGE_KEYS.comments, []);
+            const now = new Date().toISOString();
+            const comment: Comment = {
+                id: generateId(),
+                taskId: input.taskId,
+                userId: input.userId,
+                userName: input.userName,
+                userAvatar: input.userAvatar,
+                content: input.content,
+                isInternal: input.isInternal || false,
+                createdAt: now,
+            };
+            comments.push(comment);
+            saveToStorage(STORAGE_KEYS.comments, comments);
+            return comment;
+        },
+
+        async updateComment(id: string, content: string): Promise<Comment | null> {
+            const comments = getFromStorage<Comment[]>(STORAGE_KEYS.comments, []);
+            const index = comments.findIndex(c => c.id === id);
+            if (index === -1) return null;
+
+            comments[index] = {
+                ...comments[index],
+                content,
+                updatedAt: new Date().toISOString(),
+            };
+            saveToStorage(STORAGE_KEYS.comments, comments);
+            return comments[index];
+        },
+
+        async deleteComment(id: string): Promise<boolean> {
+            const comments = getFromStorage<Comment[]>(STORAGE_KEYS.comments, []);
+            const filtered = comments.filter(c => c.id !== id);
+            if (filtered.length === comments.length) return false;
+
+            saveToStorage(STORAGE_KEYS.comments, filtered);
+            return true;
+        },
+
+        // ==================
+        // Activity Operations
+        // ==================
+        async getActivity(taskId: string): Promise<Activity[]> {
+            const activities = getFromStorage<Activity[]>(STORAGE_KEYS.activities, []);
+            return activities.filter(a => a.taskId === taskId).sort((a, b) =>
+                new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+            );
+        },
+
+        async logActivity(activity): Promise<Activity> {
+            const activities = getFromStorage<Activity[]>(STORAGE_KEYS.activities, []);
+            const now = new Date().toISOString();
+            const newActivity: Activity = {
+                ...activity,
+                id: generateId(),
+                createdAt: now,
+            };
+            activities.push(newActivity);
+            saveToStorage(STORAGE_KEYS.activities, activities);
+            return newActivity;
+        },
+
+        // ==================
+        // Task Relationship Operations
+        // ==================
+        async getTaskRelationships(taskId?: string): Promise<TaskRelationship[]> {
+            const relationships = getFromStorage<TaskRelationship[]>(STORAGE_KEYS.taskRelationships, []);
+            if (taskId) {
+                return relationships.filter(r =>
+                    r.sourceTaskId === taskId || r.targetTaskId === taskId
+                );
+            }
+            return relationships;
+        },
+
+        async createTaskRelationship(input): Promise<TaskRelationship> {
+            const relationships = getFromStorage<TaskRelationship[]>(STORAGE_KEYS.taskRelationships, []);
+            const now = new Date().toISOString();
+            const relationship: TaskRelationship = {
+                ...input,
+                id: generateId(),
+                createdAt: now,
+            };
+            relationships.push(relationship);
+            saveToStorage(STORAGE_KEYS.taskRelationships, relationships);
+            return relationship;
+        },
+
+        async deleteTaskRelationship(id: string): Promise<boolean> {
+            const relationships = getFromStorage<TaskRelationship[]>(STORAGE_KEYS.taskRelationships, []);
+            const filtered = relationships.filter(r => r.id !== id);
+            if (filtered.length === relationships.length) return false;
+
+            saveToStorage(STORAGE_KEYS.taskRelationships, filtered);
+            return true;
+        },
+
+        // ==================
+        // SLA Configuration Operations
+        // ==================
+        async getSLAConfigs(): Promise<SLAConfig[]> {
+            return getFromStorage<SLAConfig[]>(STORAGE_KEYS.slaConfigs, []);
+        },
+
+        async getSLAConfigById(id: string): Promise<SLAConfig | null> {
+            const configs = getFromStorage<SLAConfig[]>(STORAGE_KEYS.slaConfigs, []);
+            return configs.find(c => c.id === id) || null;
+        },
+
+        async createSLAConfig(config): Promise<SLAConfig> {
+            const configs = getFromStorage<SLAConfig[]>(STORAGE_KEYS.slaConfigs, []);
+            const now = new Date().toISOString();
+            const newConfig: SLAConfig = {
+                ...config,
+                id: generateId(),
+                createdAt: now,
+                updatedAt: now,
+            };
+            configs.push(newConfig);
+            saveToStorage(STORAGE_KEYS.slaConfigs, configs);
+            return newConfig;
+        },
+
+        async updateSLAConfig(id: string, data): Promise<SLAConfig | null> {
+            const configs = getFromStorage<SLAConfig[]>(STORAGE_KEYS.slaConfigs, []);
+            const index = configs.findIndex(c => c.id === id);
+            if (index === -1) return null;
+
+            configs[index] = {
+                ...configs[index],
+                ...data,
+                updatedAt: new Date().toISOString(),
+            };
+            saveToStorage(STORAGE_KEYS.slaConfigs, configs);
+            return configs[index];
+        },
+
+        async deleteSLAConfig(id: string): Promise<boolean> {
+            const configs = getFromStorage<SLAConfig[]>(STORAGE_KEYS.slaConfigs, []);
+            const filtered = configs.filter(c => c.id !== id);
+            if (filtered.length === configs.length) return false;
+
+            saveToStorage(STORAGE_KEYS.slaConfigs, filtered);
+            return true;
+        },
+
+        // ==================
+        // Time Entry Operations
+        // ==================
+        async getTimeEntries(taskId?: string): Promise<TimeEntry[]> {
+            const entries = getFromStorage<TimeEntry[]>(STORAGE_KEYS.timeEntries, []);
+            if (taskId) {
+                return entries.filter(e => e.taskId === taskId).sort((a, b) =>
+                    new Date(b.loggedAt).getTime() - new Date(a.loggedAt).getTime()
+                );
+            }
+            return entries.sort((a, b) =>
+                new Date(b.loggedAt).getTime() - new Date(a.loggedAt).getTime()
+            );
+        },
+
+        async getTimeEntryById(id: string): Promise<TimeEntry | null> {
+            const entries = getFromStorage<TimeEntry[]>(STORAGE_KEYS.timeEntries, []);
+            return entries.find(e => e.id === id) || null;
+        },
+
+        async createTimeEntry(input): Promise<TimeEntry> {
+            const entries = getFromStorage<TimeEntry[]>(STORAGE_KEYS.timeEntries, []);
+            const now = new Date().toISOString();
+            const entry: TimeEntry = {
+                id: generateId(),
+                taskId: input.taskId,
+                userId: input.userId,
+                userName: input.userName,
+                durationMinutes: input.durationMinutes,
+                description: input.description,
+                loggedAt: input.loggedAt || now,
+                createdAt: now,
+            };
+            entries.push(entry);
+            saveToStorage(STORAGE_KEYS.timeEntries, entries);
+            return entry;
+        },
+
+        async updateTimeEntry(id: string, data): Promise<TimeEntry | null> {
+            const entries = getFromStorage<TimeEntry[]>(STORAGE_KEYS.timeEntries, []);
+            const index = entries.findIndex(e => e.id === id);
+            if (index === -1) return null;
+
+            entries[index] = {
+                ...entries[index],
+                ...data,
+            };
+            saveToStorage(STORAGE_KEYS.timeEntries, entries);
+            return entries[index];
+        },
+
+        async deleteTimeEntry(id: string): Promise<boolean> {
+            const entries = getFromStorage<TimeEntry[]>(STORAGE_KEYS.timeEntries, []);
+            const filtered = entries.filter(e => e.id !== id);
+            if (filtered.length === entries.length) return false;
+
+            saveToStorage(STORAGE_KEYS.timeEntries, filtered);
+            return true;
         },
 
         // ==================
@@ -635,7 +1139,7 @@ export function createLocalAdapter(): FluxDataProvider {
             const conversations = getFromStorage<AgentConversation[]>(STORAGE_KEYS.agentConversations, []);
             const index = conversations.findIndex(c => c.sessionId === sessionId);
             if (index === -1) return null;
-            
+
             conversations[index] = {
                 ...conversations[index],
                 messages,

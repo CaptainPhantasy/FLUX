@@ -7,7 +7,7 @@ export default function EditorPage() {
   const [content, setContent] = useState('<p>Start writing your masterpiece...</p>');
 
   return (
-    <div className="p-6 max-w-5xl mx-auto space-y-4">
+    <div className="p-6 pt-16 max-w-5xl mx-auto space-y-4">
       <div>
         <h1 className="text-3xl font-bold text-foreground">Flux Editor</h1>
         <p className="text-muted-foreground">Rich text editing with slash commands and code blocks.</p>

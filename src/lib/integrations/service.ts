@@ -93,7 +93,8 @@ export class IntegrationService {
       gmail: {
         clientId: import.meta.env?.VITE_GOOGLE_CLIENT_ID || '',
         clientSecret: import.meta.env?.VITE_GOOGLE_CLIENT_SECRET || '',
-        redirectUri: `${baseUrl}/api/integrations/gmail/callback`,
+        // Redirect to appearance page with OAuth params
+        redirectUri: `${baseUrl}/app/appearance`,
       },
     };
   }

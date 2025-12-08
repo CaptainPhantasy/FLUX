@@ -152,7 +152,7 @@ export default function SprintPage() {
     ];
 
     return (
-        <div className="p-8 max-w-[1800px] mx-auto space-y-6 min-h-screen flex flex-col">
+        <div className="p-8 pt-16 max-w-[1800px] mx-auto space-y-6 min-h-screen flex flex-col">
             
             {/* Workflow Selector */}
             <div className="flex items-center justify-between">

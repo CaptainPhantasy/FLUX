@@ -14,6 +14,8 @@ import type {
 import { getLLMProvider, getAvailableProviders } from './llm';
 import { getToolDefinitions } from '@/lib/ai/tools';
 import { useFluxStore } from '@/lib/store';
+import { generateProactiveSuggestions, type ProactiveSuggestion } from './proactive';
+import { getAdapter, isDbInitialized } from '@/lib/db';
 
 // ==================
 // Initial State
@@ -124,6 +126,9 @@ interface NanocoderContextValue {
   processCommand: (input: string, source?: 'voice' | 'terminal') => Promise<string>;
   // History
   clearHistory: () => void;
+  // Proactive suggestions (Phase 3.2)
+  proactiveSuggestions: ProactiveSuggestion[];
+  refreshProactiveSuggestions: () => void;
 }
 
 const NanocoderContext = createContext<NanocoderContextValue | null>(null);
@@ -138,6 +143,8 @@ interface NanocoderProviderProps {
 
 export function NanocoderProvider({ children }: NanocoderProviderProps) {
   const [state, dispatch] = useReducer(nanocoderReducer, initialState);
+  const [proactiveSuggestions, setProactiveSuggestions] = React.useState<ProactiveSuggestion[]>([]);
+  const store = useFluxStore();
 
   // Initialize on mount
   useEffect(() => {
@@ -153,6 +160,49 @@ export function NanocoderProvider({ children }: NanocoderProviderProps) {
     }
     dispatch({ type: 'INITIALIZE' });
   }, []);
+
+  // Generate proactive suggestions (Phase 3.2)
+  const refreshProactiveSuggestions = useCallback(async () => {
+    if (!isDbInitialized() || !store.user) return;
+
+    try {
+      const db = getAdapter(store.config.storageMode);
+      
+      // Get all activities
+      const allActivities: any[] = [];
+      for (const task of store.tasks) {
+        const activities = await db.getActivity(task.id);
+        allActivities.push(...activities);
+      }
+
+      const context = {
+        tasks: store.tasks,
+        activities: allActivities,
+        timeEntries: store.timeEntries,
+        users: store.users,
+        slaConfigs: store.slaConfigs,
+        currentUser: store.user,
+        workflowMode: store.workflowMode,
+      };
+
+      const suggestions = generateProactiveSuggestions(context);
+      setProactiveSuggestions(suggestions);
+    } catch (error) {
+      console.error('[Nanocoder] Failed to generate proactive suggestions:', error);
+    }
+  }, [store.tasks, store.timeEntries, store.users, store.slaConfigs, store.user, store.workflowMode, store.config.storageMode]);
+
+  // Refresh suggestions periodically and when data changes
+  useEffect(() => {
+    refreshProactiveSuggestions();
+    
+    // Refresh every 5 minutes
+    const interval = setInterval(() => {
+      refreshProactiveSuggestions();
+    }, 5 * 60 * 1000);
+
+    return () => clearInterval(interval);
+  }, [refreshProactiveSuggestions]);
 
   // Save config changes to localStorage
   useEffect(() => {
@@ -288,6 +338,8 @@ export function NanocoderProvider({ children }: NanocoderProviderProps) {
     stopListening,
     processCommand,
     clearHistory,
+    proactiveSuggestions,
+    refreshProactiveSuggestions,
   }), [
     state,
     setLLMProvider,
@@ -301,6 +353,8 @@ export function NanocoderProvider({ children }: NanocoderProviderProps) {
     stopListening,
     processCommand,
     clearHistory,
+    proactiveSuggestions,
+    refreshProactiveSuggestions,
   ]);
 
   return (

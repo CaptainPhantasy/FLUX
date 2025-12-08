@@ -33,7 +33,7 @@ const MOCK_COMMENTS = [
 
 export default function CommentsPage() {
   return (
-    <div className="p-6 max-w-5xl mx-auto space-y-4">
+    <div className="p-6 pt-16 max-w-5xl mx-auto space-y-4">
       <div>
         <h1 className="text-3xl font-bold text-foreground">Comments</h1>
         <p className="text-muted-foreground">Threaded discussion stream with reactions.</p>

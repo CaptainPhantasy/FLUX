@@ -549,3 +549,91 @@ ul[data-type="taskList"] li > div {
 .animate-third { animation: moveInCircle 40s linear infinite; }
 .animate-fourth { animation: moveHorizontal 40s ease infinite; }
 .animate-fifth { animation: moveInCircle 20s ease infinite; }
+
+/* ==================
+   Nanocoder Visual Feedback
+   ================== */
+
+/* Toast animations */
+@keyframes nanocoder-toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(20px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes nanocoder-toast-out {
+  from {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-10px) scale(0.95);
+  }
+}
+
+/* Task highlight effect */
+.nanocoder-highlight {
+  animation: nanocoder-pulse 1s ease-in-out infinite;
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.5), 0 0 20px rgba(139, 92, 246, 0.3) !important;
+  position: relative;
+  z-index: 10;
+}
+
+@keyframes nanocoder-pulse {
+  0%, 100% {
+    box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.5), 0 0 20px rgba(139, 92, 246, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 0 6px rgba(139, 92, 246, 0.3), 0 0 30px rgba(139, 92, 246, 0.4);
+  }
+}
+
+/* Task moved animation */
+.nanocoder-task-moved {
+  animation: nanocoder-moved 0.5s ease-out;
+}
+
+@keyframes nanocoder-moved {
+  0% {
+    transform: scale(1.05);
+    background-color: rgba(16, 185, 129, 0.2);
+  }
+  100% {
+    transform: scale(1);
+    background-color: transparent;
+  }
+}
+
+/* Voice listening indicator */
+.nanocoder-listening {
+  animation: nanocoder-listening-pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes nanocoder-listening-pulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 0 10px rgba(239, 68, 68, 0);
+  }
+}
+
+/* Navigation transition */
+.nanocoder-navigating {
+  animation: nanocoder-fade 0.3s ease-out;
+}
+
+@keyframes nanocoder-fade {
+  from {
+    opacity: 0.5;
+  }
+  to {
+    opacity: 1;
+  }
+}

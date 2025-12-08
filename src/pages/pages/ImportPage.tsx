@@ -8,7 +8,7 @@ import { ImportWizard } from '@/components/ImportWizard';
 
 export default function ImportPage() {
     return (
-        <div className="space-y-6 h-[calc(100vh-100px)]">
+        <div className="space-y-6 h-[calc(100vh-100px)] pt-16 px-8">
             <div className="flex justify-between items-center">
                 <div>
                     <h1 className="text-3xl font-bold tracking-tight">Import</h1>

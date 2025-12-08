@@ -5,9 +5,10 @@ export function cn(...inputs: ClassValue[]) {
     return twMerge(clsx(inputs));
 }
 
-export function formatRelativeTime(timestamp: number): string {
+export function formatRelativeTime(timestamp: number | string): string {
+    const date = typeof timestamp === 'string' ? new Date(timestamp).getTime() : timestamp;
     const rtf = new Intl.RelativeTimeFormat('en', { numeric: 'auto' });
-    const diff = (timestamp - Date.now()) / 1000; // seconds
+    const diff = (date - Date.now()) / 1000; // seconds
     if (Math.abs(diff) < 60) return rtf.format(Math.round(diff), 'second');
     if (Math.abs(diff) < 3600) return rtf.format(Math.round(diff / 60), 'minute');
     if (Math.abs(diff) < 86400) return rtf.format(Math.round(diff / 3600), 'hour');

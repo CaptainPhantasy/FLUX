@@ -1,57 +1,104 @@
 <!-- Timestamp: 23:54:45 Dec 06, 2025 -->
 
-# Flux — The AI-Native Project & ITSM Platform
-**Last Updated:** 23:54:45 Dec 06, 2025  
-**Classification:** Product Overview & Market Position
+# FLUX - Slack App Marketplace Description
 
-Flux is an AI-native project management and ITSM platform built to give teams time back. Every interaction flows through Gemini-powered intelligence that plans, triages, analyzes, and reports so humans can focus on the work that matters.
+## Long Description
+
+**FLUX** is an AI-native project management platform that empowers teams to ship faster by combining intelligent automation, unified communication, and powerful workflow management in one seamless experience.
+
+### 🚀 **Why FLUX?**
+
+Built for modern teams who need more than just task tracking. FLUX integrates your entire workflow—from email inbox to sprint planning—into a single, AI-powered platform that adapts to how you work.
+
+### ✨ **Key Features**
+
+**📧 Unified Email Inbox**
+- Connect Gmail, Outlook, or any IMAP/POP3 account
+- Turn emails into actionable tasks with one click
+- Full-text search across all your emails
+- Smart organization with labels and folders
+- Local delete protection—manage your inbox without affecting your actual email
+
+**🎯 Intelligent Task Management**
+- Multiple workflow modes: Agile, CCaaS (Contact Center), and ITSM
+- AI-powered task generation from descriptions
+- Drag-and-drop kanban boards
+- Sprint planning with burndown charts
+- Velocity tracking and analytics
+
+**🤖 AI-First Workflow**
+- Natural language commands: "Create a high priority task for API refactor"
+- Auto-generate tasks from project descriptions
+- AI triage for incidents
+- Predictive SLA breach detection
+- Smart workflow optimizations
+
+**🔗 Powerful Integrations**
+- GitHub, Slack, Figma, Trello, and more
+- Zapier webhooks for automation
+- Import from Jira, Asana, Linear, Monday.com
+- Real-time sync across platforms
+
+**📊 Advanced Analytics**
+- Dashboard summaries and insights
+- Task distribution analysis
+- Team velocity metrics
+- Burndown charts
+- Custom reports and exports
+
+**🛡️ Enterprise-Ready**
+- Multi-tenant architecture
+- Role-based access control (RBAC)
+- Row-level security (RLS)
+- Super admin capabilities
+- Complete audit trails
+
+### 🎨 **Workflow Modes**
+
+**Agile Mode**: Perfect for software teams
+- Backlog → Ready → Todo → In Progress → Code Review → Testing → Done
+- Sprint planning and velocity tracking
+- Burndown charts
+
+**CCaaS Mode**: Built for contact centers
+- Queue management
+- Escalation workflows
+- Customer response tracking
+- SLA compliance
+
+**ITSM Mode**: Enterprise IT operations
+- Incident management
+- Change requests with approval workflows
+- SLA definitions and tracking
+- Vendor management
+
+### 💬 **Slack Integration**
+
+With FLUX's Slack integration, you can:
+- Create tasks directly from Slack messages
+- Get notifications for task updates
+- Search your FLUX workspace via slash commands
+- Link emails to tasks
+- Trigger automations from Slack events
+
+### 🔐 **Security & Compliance**
+
+- End-to-end encryption ready
+- OAuth support for secure email connections
+- Tenant isolation
+- GDPR compliant architecture
+- SOC 2 ready
+
+### 🚀 **Get Started**
+
+Connect FLUX to Slack and start managing your projects, emails, and workflows from one powerful platform. Perfect for teams who want to move fast without sacrificing organization or visibility.
+
+**Free tier available** • **No credit card required** • **Setup in minutes**
 
 ---
 
-## What Flux Delivers
-- **AI Architect:** Turn plain-language briefs into prioritized, estimated tasks in seconds.  
-- **Workflow AI:** Analyze any workflow for bottlenecks and automation opportunities.  
-- **Incident Triage & SLA Prediction:** Auto-severity, auto-assignment, and breach prediction before humans notice.  
-- **Boards & Sprints:** Kanban, backlog grooming, sprint planning, velocity tracking.  
-- **ITSM Console:** Incident, service catalog, change management, SLA tracking.  
-- **Analytics & Reporting:** Real-time dashboards and one-click executive summaries.  
-- **AI Command Terminal:** Ask for anything (“create a high-priority task”, “show tasks in review”, “switch to dark mode”) and Flux executes.
+*FLUX: Where AI meets project management. Ship faster, work smarter.*
 
----
 
-## Who Uses Flux
-- **Software Engineering:** Reduce context switching; auto-sync PRs, issues, and sprint updates.  
-- **IT Operations:** Faster MTTR with AI triage, risk-aware change management, and SLA compliance tracking.  
-- **Marketing & Creative:** Campaign-ready boards, AI task breakdowns, client-facing analytics.
-
----
-
-## Why It Matters
-Flux isn’t retrofitted with AI—it’s built around it. Teams report double-digit hours saved per person each week through:
-- Automated task creation and grooming  
-- Instant incident triage and SLA protection  
-- Self-updating boards and status reports  
-- One-click imports from legacy tools
-
----
-
-## Deployment Paths
-- **Flux Cloud:** Managed, real-time sync.  
-- **Self-Hosted:** Full data sovereignty on your infra.  
-- **Local Mode:** Offline-first, device-persistent.
-
----
-
-## Getting Started
-1) Describe your project in AI Architect to auto-generate a backlog.  
-2) Connect your existing tools in Integrations Hub.  
-3) Run work from the boards, service desk, or AI command terminal.  
-4) Open Analytics to share-ready reports.
-
----
-
-**Contact:** hello@legacyai.io  
-**Docs:** docs.flux.legacyai.io  
-**Discord:** discord.gg/fluxpm
 
 <!-- EOF Timestamp: 23:54:45 Dec 06, 2025 -->

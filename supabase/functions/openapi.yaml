@@ -1,0 +1,1160 @@
+openapi: 3.0.3
+info:
+  title: FLUX API
+  version: 1.0.0
+  description: |
+    REST API for FLUX - AI-native project management platform.
+    
+    This API serves as the backbone for:
+    - Nanocoder Agent (AI agent that controls UI via natural language)
+    - MCP Server (External tool calls from LLMs)
+    - Zapier Webhooks (Third-party automation triggers)
+    - Mobile/External Clients (Future expansion)
+    
+    **Email System**: Fully integrated inbox functionality with local-only delete protection.
+
+servers:
+  - url: https://{project}.supabase.co/functions/v1
+    description: Supabase Edge Functions
+    variables:
+      project:
+        default: your-project-id
+
+paths:
+  # ==================
+  # Users
+  # ==================
+  /users/me:
+    get:
+      summary: Get current user
+      operationId: getCurrentUser
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    patch:
+      summary: Update current user
+      operationId: updateCurrentUser
+      security:
+        - bearerAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                avatar:
+                  type: string
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+
+  /users/me/preferences:
+    patch:
+      summary: Update user preferences
+      operationId: updateUserPreferences
+      security:
+        - bearerAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserPreferences'
+      responses:
+        '200':
+          description: Success
+
+  /users:
+    get:
+      summary: List users (admin)
+      operationId: listUsers
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+        - name: limit
+          in: query
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/User'
+                  meta:
+                    $ref: '#/components/schemas/PaginationMeta'
+
+  # ==================
+  # Tasks
+  # ==================
+  /tasks:
+    get:
+      summary: List tasks
+      operationId: listTasks
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: projectId
+          in: query
+          schema:
+            type: string
+        - name: status
+          in: query
+          schema:
+            type: string
+        - name: priority
+          in: query
+          schema:
+            type: string
+        - name: assigneeId
+          in: query
+          schema:
+            type: string
+        - name: page
+          in: query
+          schema:
+            type: integer
+        - name: limit
+          in: query
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Task'
+                  meta:
+                    $ref: '#/components/schemas/PaginationMeta'
+    post:
+      summary: Create task
+      operationId: createTask
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TaskCreateInput'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Task'
+
+  /tasks/{id}:
+    get:
+      summary: Get task
+      operationId: getTask
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Task'
+    patch:
+      summary: Update task
+      operationId: updateTask
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TaskUpdateInput'
+      responses:
+        '200':
+          description: Success
+    delete:
+      summary: Delete task
+      operationId: deleteTask
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Success
+
+  /tasks/{id}/move:
+    post:
+      summary: Move task to new status/order
+      operationId: moveTask
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - status
+              properties:
+                status:
+                  type: string
+                order:
+                  type: integer
+      responses:
+        '200':
+          description: Success
+
+  /tasks/archive:
+    post:
+      summary: Bulk archive tasks
+      operationId: archiveTasks
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - ids
+              properties:
+                ids:
+                  type: array
+                  items:
+                    type: string
+      responses:
+        '200':
+          description: Success
+
+  # ==================
+  # Email Accounts ⭐
+  # ==================
+  /email-accounts:
+    get:
+      summary: List email accounts
+      operationId: listEmailAccounts
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/EmailAccount'
+    post:
+      summary: Create/connect email account
+      operationId: createEmailAccount
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EmailAccountCreateInput'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmailAccount'
+
+  /email-accounts/{id}:
+    get:
+      summary: Get email account
+      operationId: getEmailAccount
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Success
+    patch:
+      summary: Update email account
+      operationId: updateEmailAccount
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                syncEnabled:
+                  type: boolean
+                syncFrequencyMinutes:
+                  type: integer
+      responses:
+        '200':
+          description: Success
+    delete:
+      summary: Delete/disconnect email account
+      operationId: deleteEmailAccount
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Success
+
+  /email-accounts/{id}/sync:
+    post:
+      summary: Trigger manual email sync
+      operationId: syncEmailAccount
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Sync triggered
+
+  /email-accounts/{id}/test:
+    post:
+      summary: Test email account connection
+      operationId: testEmailAccount
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Connection test result
+
+  # ==================
+  # Emails ⭐
+  # ==================
+  /emails:
+    get:
+      summary: List emails
+      operationId: listEmails
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: accountId
+          in: query
+          schema:
+            type: string
+        - name: folder
+          in: query
+          schema:
+            type: string
+            enum: [inbox, sent, draft, spam, trash, archive]
+        - name: isRead
+          in: query
+          schema:
+            type: boolean
+        - name: isStarred
+          in: query
+          schema:
+            type: boolean
+        - name: page
+          in: query
+          schema:
+            type: integer
+        - name: limit
+          in: query
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Email'
+                  meta:
+                    $ref: '#/components/schemas/PaginationMeta'
+
+  /emails/search:
+    get:
+      summary: Search emails (full-text search)
+      operationId: searchEmails
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: q
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: folder
+          in: query
+          schema:
+            type: string
+        - name: limit
+          in: query
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Email'
+
+  /emails/{id}:
+    get:
+      summary: Get email
+      operationId: getEmail
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Email'
+    patch:
+      summary: Update email (flags, labels, folder)
+      operationId: updateEmail
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EmailUpdateInput'
+      responses:
+        '200':
+          description: Success
+    delete:
+      summary: Delete email (LOCAL DELETE ONLY - does not affect actual email account)
+      operationId: deleteEmail
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+                    example: "Email deleted locally (does not affect actual email account)"
+
+  /emails/{id}/mark-read:
+    post:
+      summary: Mark email as read/unread
+      operationId: markEmailRead
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                isRead:
+                  type: boolean
+      responses:
+        '200':
+          description: Success
+
+  /emails/{id}/star:
+    post:
+      summary: Toggle email star
+      operationId: markEmailStarred
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                isStarred:
+                  type: boolean
+      responses:
+        '200':
+          description: Success
+
+  /emails/{id}/archive:
+    post:
+      summary: Archive/unarchive email
+      operationId: archiveEmail
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                isArchived:
+                  type: boolean
+      responses:
+        '200':
+          description: Success
+
+  /emails/{id}/move:
+    post:
+      summary: Move email to folder
+      operationId: moveEmailToFolder
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - folder
+              properties:
+                folder:
+                  type: string
+                  enum: [inbox, sent, draft, spam, trash, archive]
+      responses:
+        '200':
+          description: Success
+
+  /emails/unread-count:
+    get:
+      summary: Get unread email count
+      operationId: getUnreadEmailCount
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  count:
+                    type: integer
+
+  /emails/bulk-update:
+    post:
+      summary: Bulk update emails
+      operationId: bulkUpdateEmails
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - ids
+              properties:
+                ids:
+                  type: array
+                  items:
+                    type: string
+                isRead:
+                  type: boolean
+                isArchived:
+                  type: boolean
+                folder:
+                  type: string
+      responses:
+        '200':
+          description: Success
+
+  # ==================
+  # Email Labels ⭐
+  # ==================
+  /email-labels:
+    get:
+      summary: List email labels
+      operationId: listEmailLabels
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/EmailLabel'
+    post:
+      summary: Create email label
+      operationId: createEmailLabel
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+              properties:
+                name:
+                  type: string
+                color:
+                  type: string
+                  default: '#6366f1'
+      responses:
+        '201':
+          description: Created
+
+  /email-labels/{id}:
+    patch:
+      summary: Update email label
+      operationId: updateEmailLabel
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                color:
+                  type: string
+      responses:
+        '200':
+          description: Success
+    delete:
+      summary: Delete email label
+      operationId: deleteEmailLabel
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Success
+
+  /emails/{emailId}/labels/{labelId}:
+    post:
+      summary: Add label to email
+      operationId: addLabelToEmail
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: emailId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: labelId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Success
+    delete:
+      summary: Remove label from email
+      operationId: removeLabelFromEmail
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: emailId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: labelId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Success
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+        email:
+          type: string
+        name:
+          type: string
+        avatar:
+          type: string
+        role:
+          type: string
+        tenantId:
+          type: string
+        preferences:
+          $ref: '#/components/schemas/UserPreferences'
+
+    UserPreferences:
+      type: object
+      properties:
+        theme:
+          type: string
+          enum: [light, dark, system]
+        sidebarCollapsed:
+          type: boolean
+        notificationsEnabled:
+          type: boolean
+        workflowMode:
+          type: string
+          enum: [agile, ccaas, itsm]
+
+    Task:
+      type: object
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        description:
+          type: string
+        status:
+          type: string
+        priority:
+          type: string
+          enum: [low, medium, high, urgent]
+        tags:
+          type: array
+          items:
+            type: string
+        assignee:
+          type: object
+        dueDate:
+          type: string
+        projectId:
+          type: string
+        order:
+          type: integer
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+
+    TaskCreateInput:
+      type: object
+      required:
+        - title
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+        status:
+          type: string
+        priority:
+          type: string
+        tags:
+          type: array
+          items:
+            type: string
+        assignee:
+          type: string
+        dueDate:
+          type: string
+        projectId:
+          type: string
+
+    TaskUpdateInput:
+      type: object
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+        status:
+          type: string
+        priority:
+          type: string
+        tags:
+          type: array
+          items:
+            type: string
+        assignee:
+          type: string
+        dueDate:
+          type: string
+        order:
+          type: integer
+
+    EmailAccount:
+      type: object
+      properties:
+        id:
+          type: string
+        tenantId:
+          type: string
+        userId:
+          type: string
+        provider:
+          type: string
+          enum: [gmail, outlook, custom_smtp, custom_imap, custom_pop3]
+        emailAddress:
+          type: string
+        displayName:
+          type: string
+        syncEnabled:
+          type: boolean
+        syncFrequencyMinutes:
+          type: integer
+        lastSyncedAt:
+          type: string
+        isActive:
+          type: boolean
+        connectionStatus:
+          type: string
+          enum: [connected, disconnected, error]
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+
+    EmailAccountCreateInput:
+      type: object
+      required:
+        - provider
+        - emailAddress
+      properties:
+        provider:
+          type: string
+          enum: [gmail, outlook, custom_smtp, custom_imap, custom_pop3]
+        emailAddress:
+          type: string
+        displayName:
+          type: string
+        smtpHost:
+          type: string
+        smtpPort:
+          type: integer
+        smtpUsername:
+          type: string
+        smtpPassword:
+          type: string
+        imapHost:
+          type: string
+        imapPort:
+          type: integer
+        imapUsername:
+          type: string
+        imapPassword:
+          type: string
+        oauthAccessToken:
+          type: string
+        oauthRefreshToken:
+          type: string
+        syncEnabled:
+          type: boolean
+        syncFrequencyMinutes:
+          type: integer
+
+    Email:
+      type: object
+      properties:
+        id:
+          type: string
+        tenantId:
+          type: string
+        accountId:
+          type: string
+        messageId:
+          type: string
+        threadId:
+          type: string
+        fromAddress:
+          type: string
+        fromName:
+          type: string
+        toAddresses:
+          type: array
+          items:
+            type: string
+        ccAddresses:
+          type: array
+          items:
+            type: string
+        subject:
+          type: string
+        bodyText:
+          type: string
+        bodyHtml:
+          type: string
+        receivedAt:
+          type: string
+        sentAt:
+          type: string
+        sizeBytes:
+          type: integer
+        isRead:
+          type: boolean
+        isStarred:
+          type: boolean
+        isArchived:
+          type: boolean
+        isDeleted:
+          type: boolean
+        labels:
+          type: array
+          items:
+            type: string
+        folder:
+          type: string
+          enum: [inbox, sent, draft, spam, trash, archive]
+        attachments:
+          type: array
+          items:
+            type: object
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+
+    EmailUpdateInput:
+      type: object
+      properties:
+        isRead:
+          type: boolean
+        isStarred:
+          type: boolean
+        isArchived:
+          type: boolean
+        isDeleted:
+          type: boolean
+        labels:
+          type: array
+          items:
+            type: string
+        folder:
+          type: string
+          enum: [inbox, sent, draft, spam, trash, archive]
+
+    EmailLabel:
+      type: object
+      properties:
+        id:
+          type: string
+        tenantId:
+          type: string
+        userId:
+          type: string
+        name:
+          type: string
+        color:
+          type: string
+        createdAt:
+          type: string
+
+    PaginationMeta:
+      type: object
+      properties:
+        pagination:
+          type: object
+          properties:
+            page:
+              type: integer
+            limit:
+              type: integer
+            total:
+              type: integer
+            totalPages:
+              type: integer
+
+  responses:
+    Unauthorized:
+      description: Unauthorized - Missing or invalid token
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    Forbidden:
+      description: Forbidden - Insufficient permissions
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    ValidationError:
+      description: Validation error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: object
+          properties:
+            code:
+              type: string
+            message:
+              type: string
+            details:
+              type: object
+

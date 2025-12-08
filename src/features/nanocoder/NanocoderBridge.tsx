@@ -98,13 +98,13 @@ export function NanocoderBridge({ onTerminalOpen, onTerminalClose }: NanocoderBr
 
       case 'go_back': {
         try {
-          if (historyStack.current.length > 1) {
-            // Remove current path
-            historyStack.current.pop();
-            // Get previous path
+        if (historyStack.current.length > 1) {
+          // Remove current path
+          historyStack.current.pop();
+          // Get previous path
             const previousPath = historyStack.current.at(-1);
-            if (previousPath) {
-              navigate(previousPath);
+          if (previousPath) {
+            navigate(previousPath);
               showVisualToast('Navigated back', 'success');
             } else {
               navigate(-1);
@@ -256,7 +256,7 @@ export function NanocoderBridge({ onTerminalOpen, onTerminalClose }: NanocoderBr
         const workflowMode = store.workflowMode || 'agile';
         const workflow = getWorkflow(workflowMode);
         const columns = getActiveColumns(workflowMode);
-
+        
         const defaultStatus = columns[0]?.id || 'backlog';
         const requestedStatus = status || defaultStatus;
         const validStatus = workflow.columns.find(c => c.id === requestedStatus)?.id || defaultStatus;
@@ -394,13 +394,15 @@ export function NanocoderBridge({ onTerminalOpen, onTerminalClose }: NanocoderBr
       }
 
       case 'mark_email_read': {
-        const { isRead } = action.payload as { emailId: string; isRead: boolean };
+        const { emailId, isRead } = action.payload as { emailId: string; isRead: boolean };
+        console.log('[NanocoderBridge] mark_email_read:', { emailId, isRead });
         showVisualToast(`Email marked as ${isRead ? 'read' : 'unread'}`, 'success');
         break;
       }
 
       case 'star_email': {
-        const { isStarred } = action.payload as { emailId: string; isStarred: boolean };
+        const { emailId, isStarred } = action.payload as { emailId: string; isStarred: boolean };
+        console.log('[NanocoderBridge] star_email:', { emailId, isStarred });
         showVisualToast(`Email ${isStarred ? 'starred' : 'unstarred'}`, 'success');
         break;
       }

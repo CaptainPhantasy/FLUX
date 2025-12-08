@@ -222,7 +222,7 @@ Be helpful and execute actions immediately.`;
         if (result.data) {
           toolResultContent += `\nData: ${JSON.stringify(result.data)}`;
         }
-        
+
         toolResults.push({
           type: 'tool_result',
           tool_use_id: toolCall.id,

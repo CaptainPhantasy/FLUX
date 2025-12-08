@@ -7,7 +7,10 @@
 
 import type {
     User,
+    Team,
     Task,
+    TaskRelationship,
+    TaskRelationshipType,
     TaskCreateInput,
     TaskUpdateInput,
     Notification,
@@ -24,6 +27,12 @@ import type {
     AgentConversation,
     AgentActionLog,
     AgentEntityMapping,
+    Comment,
+    Activity,
+    CommentCreateInput,
+    SLAConfig,
+    TimeEntry,
+    TimeEntryCreateInput,
 } from '@/types';
 
 /**
@@ -38,6 +47,19 @@ export interface FluxDataProvider {
     // ==================
     getCurrentUser(): Promise<User | null>;
     updateUserPreferences(userId: string, preferences: Partial<User['preferences']>): Promise<User | null>;
+    
+    // Team Management Operations
+    getUsers(): Promise<User[]>;
+    getUserById(id: string): Promise<User | null>;
+    createUser(user: Omit<User, 'id' | 'createdAt'>): Promise<User>;
+    updateUser(id: string, data: Partial<User>): Promise<User | null>;
+    deleteUser(id: string): Promise<boolean>;
+    
+    getTeams(): Promise<Team[]>;
+    getTeamById(id: string): Promise<Team | null>;
+    createTeam(team: Omit<Team, 'id' | 'createdAt' | 'updatedAt'>): Promise<Team>;
+    updateTeam(id: string, data: Partial<Team>): Promise<Team | null>;
+    deleteTeam(id: string): Promise<boolean>;
 
     // ==================
     // Task Operations
@@ -145,6 +167,45 @@ export interface FluxDataProvider {
     createEntityMapping(mapping: Omit<AgentEntityMapping, 'id' | 'createdAt'>): Promise<AgentEntityMapping>;
     getEntityMappings(sourceType: string, sourceId: string): Promise<AgentEntityMapping[]>;
     getEntityMappingsByTarget(targetType: string, targetId: string): Promise<AgentEntityMapping[]>;
+
+    // ==================
+    // Comment Operations
+    // ==================
+    getComments(taskId: string): Promise<Comment[]>;
+    createComment(input: CommentCreateInput & { userId: string; userName: string; userAvatar?: string }): Promise<Comment>;
+    updateComment(id: string, content: string): Promise<Comment | null>;
+    deleteComment(id: string): Promise<boolean>;
+    
+    // ==================
+    // Activity Operations
+    // ==================
+    getActivity(taskId: string): Promise<Activity[]>;
+    logActivity(activity: Omit<Activity, 'id' | 'createdAt'>): Promise<Activity>;
+
+    // ==================
+    // Task Relationship Operations
+    // ==================
+    getTaskRelationships(taskId?: string): Promise<TaskRelationship[]>;
+    createTaskRelationship(input: Omit<TaskRelationship, 'id' | 'createdAt'>): Promise<TaskRelationship>;
+    deleteTaskRelationship(id: string): Promise<boolean>;
+
+    // ==================
+    // SLA Configuration Operations
+    // ==================
+    getSLAConfigs(): Promise<SLAConfig[]>;
+    getSLAConfigById(id: string): Promise<SLAConfig | null>;
+    createSLAConfig(config: Omit<SLAConfig, 'id' | 'createdAt' | 'updatedAt'>): Promise<SLAConfig>;
+    updateSLAConfig(id: string, data: Partial<SLAConfig>): Promise<SLAConfig | null>;
+    deleteSLAConfig(id: string): Promise<boolean>;
+
+    // ==================
+    // Time Entry Operations
+    // ==================
+    getTimeEntries(taskId?: string): Promise<TimeEntry[]>;
+    getTimeEntryById(id: string): Promise<TimeEntry | null>;
+    createTimeEntry(input: TimeEntryCreateInput & { userId: string; userName: string }): Promise<TimeEntry>;
+    updateTimeEntry(id: string, data: Partial<TimeEntry>): Promise<TimeEntry | null>;
+    deleteTimeEntry(id: string): Promise<boolean>;
 
     // ==================
     // Real-time subscriptions (optional)

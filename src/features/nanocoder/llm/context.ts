@@ -4,7 +4,7 @@
 // Builds comprehensive context for LLM prompts
 
 import { useFluxStore } from '@/lib/store';
-import { getWorkflow, getActiveColumns, type WorkflowMode } from '@/lib/workflows';
+import { getWorkflow, type WorkflowMode } from '@/lib/workflows';
 import { getPageMap, formatPageMapForPrompt, type PageMap } from '../uiMap';
 
 // Safe store accessor
@@ -21,7 +21,7 @@ const getStore = () => {
 };
 
 // Get recent agent actions from localStorage
-const getRecentAgentActions = (limit = 5): Array<{ actionType: string; success: boolean; message: string; timestamp: number }> => {
+const getRecentAgentActions = (limit = 5): Array<{ actionType: string; success: boolean; message: string; timestamp: number; taskId?: string }> => {
   try {
     const logs = JSON.parse(localStorage.getItem('flux_agent_action_logs') || '[]');
     return logs
@@ -32,6 +32,7 @@ const getRecentAgentActions = (limit = 5): Array<{ actionType: string; success: 
         success: log.result?.success || false,
         message: log.result?.message || '',
         timestamp: new Date(log.createdAt).getTime(),
+        taskId: log.inputParams?.task_id || log.result?.data?.task?.id || log.result?.data?.taskId,
       }));
   } catch {
     return [];
@@ -65,8 +66,9 @@ export interface AgentContext {
     total: number;
     byStatus: Record<string, number>;
     highPriority: number;
+    overdue: number;
   };
-  recentTasks: Array<{ title: string; status: string; priority: string }>;
+  recentTasks: Array<{ id: string; title: string; status: string; priority: string; createdAt?: string }>;
   unreadNotifications: number;
   projects: Array<{ id: string; name: string }>;
   currentProject: string | null;
@@ -78,8 +80,12 @@ export interface AgentContext {
   // Enhanced context (Phase 4)
   pageMap: PageMap | null;
   selection: SelectionState;
-  recentActions: Array<{ actionType: string; success: boolean; message: string; timestamp: number }>;
+  recentActions: Array<{ actionType: string; success: boolean; message: string; timestamp: number; taskId?: string }>;
   agentMemory: Record<string, { value: string; entityType?: string; entityId?: string }>;
+  // Phase 3.1: Relative reference tracking
+  lastCreatedTask: { id: string; title: string } | null;
+  lastModifiedTask: { id: string; title: string } | null;
+  lastAction: { type: string; targetId?: string; targetTitle?: string } | null;
 }
 
 /**
@@ -94,7 +100,8 @@ export function buildAgentContext(): AgentContext {
     }
     const workflowMode = store.workflowMode || 'agile';
     const workflow = getWorkflow(workflowMode);
-    const columns = getActiveColumns(workflowMode);
+    // Use ALL columns, not just active - agent needs to know about done/resolved/closed columns too
+    const columns = workflow.columns;
     
     // Get current page from location (if available)
     const location = typeof window !== 'undefined' ? window.location.pathname : '/app/dashboard';
@@ -102,10 +109,14 @@ export function buildAgentContext(): AgentContext {
     
     // Task statistics
     const tasks = (store.tasks || []).filter(t => t.status !== 'archived');
+    const now = new Date();
+    const overdueTasks = tasks.filter(t => t.dueDate && new Date(t.dueDate) < now);
+    
     const taskCounts = {
       total: tasks.length,
       byStatus: {} as Record<string, number>,
       highPriority: tasks.filter(t => t.priority === 'high' || t.priority === 'urgent').length,
+      overdue: overdueTasks.length,
     };
     
     // Count tasks by status
@@ -113,13 +124,20 @@ export function buildAgentContext(): AgentContext {
       taskCounts.byStatus[col.id] = tasks.filter(t => t.status === col.id).length;
     });
     
-    // Recent tasks (last 10)
+    // Recent tasks (last 10, sorted by creation date)
     const recentTasks = tasks
+      .sort((a, b) => {
+        const aTime = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const bTime = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+        return bTime - aTime;
+      })
       .slice(0, 10)
       .map(t => ({
+        id: t.id,
         title: t.title,
         status: t.status,
         priority: t.priority,
+        createdAt: t.createdAt,
       }));
     
     // Projects
@@ -164,6 +182,30 @@ export function buildAgentContext(): AgentContext {
     const recentActions = getRecentAgentActions(5);
     const agentMemory = getAgentMemory();
     
+    // Get last created task
+    const lastCreatedTask = tasks
+      .filter(t => t.createdAt)
+      .sort((a, b) => {
+        const aTime = new Date(a.createdAt!).getTime();
+        const bTime = new Date(b.createdAt!).getTime();
+        return bTime - aTime;
+      })[0] || null;
+
+    // Get last modified task (from recent actions)
+    const lastTaskAction = recentActions.find(a => 
+      a.actionType.includes('task') && a.success
+    );
+    const lastModifiedTask = lastTaskAction?.taskId
+      ? tasks.find(t => t.id === lastTaskAction.taskId) || null
+      : null;
+
+    // Get last action
+    const lastAction = recentActions[0] ? {
+      type: recentActions[0].actionType,
+      targetId: lastTaskAction?.taskId,
+      targetTitle: lastModifiedTask?.title,
+    } : null;
+    
     return {
       currentPage,
       workflowMode,
@@ -193,13 +235,17 @@ export function buildAgentContext(): AgentContext {
       selection,
       recentActions,
       agentMemory,
+      lastCreatedTask: lastCreatedTask ? { id: lastCreatedTask.id, title: lastCreatedTask.title } : null,
+      lastModifiedTask: lastModifiedTask ? { id: lastModifiedTask.id, title: lastModifiedTask.title } : null,
+      lastAction,
     };
   } catch (error) {
     console.error('[ContextBuilder] Error building context:', error);
     // Return minimal context on error
     const workflowMode: WorkflowMode = 'agile';
     const workflow = getWorkflow(workflowMode);
-    const columns = getActiveColumns(workflowMode);
+    // Use ALL columns for comprehensive knowledge
+    const columns = workflow.columns;
     
     return {
       currentPage: 'dashboard',
@@ -210,6 +256,7 @@ export function buildAgentContext(): AgentContext {
         total: 0,
         byStatus: {},
         highPriority: 0,
+        overdue: 0,
       },
       recentTasks: [],
       unreadNotifications: 0,
@@ -236,6 +283,9 @@ export function buildAgentContext(): AgentContext {
       },
       recentActions: [],
       agentMemory: {},
+      lastCreatedTask: null,
+      lastModifiedTask: null,
+      lastAction: null,
     };
   }
 }
@@ -285,11 +335,26 @@ export function buildEnhancedSystemPrompt(context: AgentContext): string {
     ? memoryKeys.map(k => `  • ${k}: ${context.agentMemory[k].value}`).join('\n')
     : '  (no stored context)';
 
+  // Format relative references (Phase 3.1)
+  const relativeRefs = [];
+  if (context.lastCreatedTask) {
+    relativeRefs.push(`  • Last Created Task: "${context.lastCreatedTask.title}" (ID: ${context.lastCreatedTask.id})`);
+  }
+  if (context.lastModifiedTask) {
+    relativeRefs.push(`  • Last Modified Task: "${context.lastModifiedTask.title}" (ID: ${context.lastModifiedTask.id})`);
+  }
+  if (context.lastAction) {
+    relativeRefs.push(`  • Last Action: ${context.lastAction.type}${context.lastAction.targetTitle ? ` on "${context.lastAction.targetTitle}"` : ''}`);
+  }
+  const relativeRefsText = relativeRefs.length > 0
+    ? relativeRefs.join('\n')
+    : '  (no recent actions)';
+
   // Format page-specific actions from UI map
   const pageActionsText = context.pageMap
     ? formatPageMapForPrompt(context.currentPage, context.workflowMode)
     : '  (no page-specific actions available)';
-
+  
   return `You are Nanocoder, an advanced AI assistant integrated into FLUX - an AI-native project management platform.
 
 You have FULL CONTROL over the application and can execute actions directly. You are the user's intelligent interface to FLUX.
@@ -305,6 +370,7 @@ CURRENT CONTEXT
 📊 Task Statistics:
   • Total Tasks: ${context.taskCounts.total}
   • High Priority: ${context.taskCounts.highPriority}
+  • Overdue: ${context.taskCounts.overdue}
   • By Status:
 ${Object.entries(context.taskCounts.byStatus).map(([status, count]) => {
   const col = context.availableColumns.find(c => c.id === status);
@@ -338,6 +404,12 @@ RECENT ACTIONS
 ═══════════════════════════════════════════════════════════════
 
 ${recentActionsText}
+
+═══════════════════════════════════════════════════════════════
+RELATIVE REFERENCES (for "the one I just created", "that bug", etc.)
+═══════════════════════════════════════════════════════════════
+
+${relativeRefsText}
 
 ═══════════════════════════════════════════════════════════════
 REMEMBERED CONTEXT
@@ -459,6 +531,15 @@ COMMAND HANDLING GUIDELINES
    - If user mentions a column that doesn't exist in current workflow, explain this clearly and suggest valid alternatives
    - Example: User says "put it in ready" but workflow is CCaaS → "The 'ready' column doesn't exist in Contact Center workflow. Would you like me to use 'New' or 'Queued' instead?"
 
+   WORKFLOW-SPECIFIC TERMINOLOGY:
+   - In Agile: Users say "task", "story", "bug", "epic", "ticket" - all map to tasks
+   - In CCaaS (Contact Center): Users say "ticket", "case", "inquiry", "complaint" - all map to tasks
+   - In ITSM: Users say "incident", "ticket", "service request", "change request" - all map to tasks
+   - UNDERSTAND CONTEXT: When user says "create a ticket" in CCaaS, use create_task tool
+   - UNDERSTAND CONTEXT: When user says "open an incident" in ITSM, consider both create_task and create_incident
+   - PRIORITY TERMS: "critical", "P1", "urgent", "blocker" → urgent; "high", "P2", "major" → high; "medium", "normal", "P3" → medium; "low", "P4", "minor" → low
+   - SEVERITY TERMS (for incidents): "sev1", "critical", "outage" → critical; "sev2", "high" → high; etc.
+
 3. TASK MATCHING:
    - When user references a task, use fuzzy matching on title
    - If multiple tasks match, prefer the most recent or highest priority
@@ -494,15 +575,26 @@ COMMAND HANDLING GUIDELINES
    - Example: "Create 3 tasks" → call create_task 3 times sequentially
    - If a step fails, explain why and suggest alternatives - don't continue with remaining steps
 
-7. CONTEXT AWARENESS:
+7. CONTEXT AWARENESS & RELATIVE REFERENCES (Phase 3.1):
    - Use current page context when relevant
    - If user says "create a task here", use current page context
    - Remember recent actions in the conversation
+   - RELATIVE REFERENCES: When user says "the one I just created", "that bug", "my last task", "the one we just worked on":
+     * "the one I just created" → Use lastCreatedTask from context
+     * "that bug" / "that task" → Use lastModifiedTask or lastAction.targetTitle from context
+     * "my last task" → Use lastCreatedTask if it belongs to current user, otherwise lastModifiedTask
+     * "the one we just worked on" → Use lastModifiedTask
+     * "move it to done" → Use lastModifiedTask or selectedTask
+   - If relative reference is unclear, ask for clarification or use the most recent matching entity
+   - Use complex_query tool for complex filters like "urgent tickets assigned to me that are overdue"
+   - Use batch_operation for multi-step commands with confirmation
+   - Use undo_last when user says "undo that" or "take that back"
 
 ═══════════════════════════════════════════════════════════════
-EXAMPLES
+EXAMPLES BY WORKFLOW
 ═══════════════════════════════════════════════════════════════
 
+AGILE WORKFLOW EXAMPLES:
 User: "Create a task called Fix the login bug"
 → create_task(title="Fix the login bug", status="backlog")
 
@@ -512,20 +604,47 @@ User: "Move the login bug task to ready"
 User: "Create a high priority task for API refactor and put it in ready"
 → create_task(title="API refactor", priority="high", status="ready")
 
+CONTACT CENTER (CCaaS) EXAMPLES:
+User: "Create a ticket for customer complaint"
+→ create_task(title="Customer complaint", status="new")
+
+User: "Move that ticket to pending customer"
+→ update_task_status(task_title="complaint", new_status="pending-customer")
+
+User: "Create a P1 ticket for service outage"
+→ create_task(title="Service outage", priority="urgent", status="new")
+
+User: "Put it in the escalated queue"
+→ update_task_status(task_title="...", new_status="escalated")
+
+ITSM EXAMPLES:
+User: "Open an incident for network down"
+→ create_incident(title="Network down", severity="critical") OR create_task(title="Network down", priority="urgent", status="new")
+
+User: "Create a P2 incident for slow application"
+→ create_incident(title="Slow application", severity="high")
+
+User: "Move that incident to investigating"
+→ update_task_status(task_title="...", new_status="investigating")
+
+GENERAL EXAMPLES:
 User: "Show me all tasks"
 → list_tasks()
 
-User: "Go to the board"
+User: "Go to the board" / "Show me my tickets" / "Open kanban"
 → navigate_to_page(page="board")
 
-User: "Switch to dark mode"
+User: "Switch to dark mode" / "Turn on night mode"
 → set_theme(theme="dark")
 
-User: "What's in my inbox?"
+User: "Go to the helpdesk" / "Show me incidents"
+→ navigate_to_page(page="service-desk")
+
+User: "What's in my inbox?" / "Check my email"
 → get_unread_count() + navigate_to_page(page="inbox")
 
 ═══════════════════════════════════════════════════════════════
 
-Remember: You are proactive, helpful, and execute actions immediately. The user trusts you to control their application intelligently.`;
+Remember: You are proactive, helpful, and execute actions immediately. The user trusts you to control their application intelligently. Understand the user's intent based on the current workflow context.`;
 }
 

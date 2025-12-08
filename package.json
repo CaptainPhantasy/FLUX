@@ -18,8 +18,10 @@
     "init:super-admin": "tsx src/scripts/initialize-super-admin.ts"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.71.2",
     "@base-ui-components/react": "1.0.0-rc.0",
     "@dnd-kit/modifiers": "^9.0.0",
+    "@elevenlabs/elevenlabs-js": "^2.26.0",
     "@google/genai": "1.0.0",
     "@google/generative-ai": "0.24.1",
     "@radix-ui/react-popover": "^1.1.5",
